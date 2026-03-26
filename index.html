@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Vendas - Kanban</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header__container">
+            <h1 class="header__title">CRM Vendas</h1>
+            <button class="header__btn-new" id="btnNovoLead">
+                <span class="btn-icon">+</span>
+                Novo Lead
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Kanban Container -->
+    <main class="kanban-container">
+        <div class="kanban-wrapper">
+            
+            <!-- Coluna: Novos -->
+            <section class="kanban-column" data-status="novo">
+                <div class="column-header">
+                    <h2 class="column-title">Novos</h2>
+                    <span class="column-count" id="count-novo">0</span>
+                </div>
+                <div class="column-content" id="column-novo">
+                    <!-- Cards renderizados aqui via JavaScript -->
+                </div>
+            </section>
+
+            <!-- Coluna: Em Negociação -->
+            <section class="kanban-column" data-status="negociacao">
+                <div class="column-header">
+                    <h2 class="column-title">Em Negociação</h2>
+                    <span class="column-count" id="count-negociacao">0</span>
+                </div>
+                <div class="column-content" id="column-negociacao">
+                    <!-- Cards renderizados aqui via JavaScript -->
+                </div>
+            </section>
+
+            <!-- Coluna: Fechados -->
+            <section class="kanban-column" data-status="fechado">
+                <div class="column-header">
+                    <h2 class="column-title">Fechados</h2>
+                    <span class="column-count" id="count-fechado">0</span>
+                </div>
+                <div class="column-content" id="column-fechado">
+                    <!-- Cards renderizados aqui via JavaScript -->
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
