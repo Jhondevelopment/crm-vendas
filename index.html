@@ -2,19 +2,40 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta 
+        name="viewport" 
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" 
+    />
+    
     <title>HAPSIS — Gestão de Alta Performance</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet" />
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <link 
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&display=swap" 
+        rel="stylesheet" 
+    />
+    
     <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-    <div id="toast" class="toast"></div>
+    <div 
+        id="toast" 
+        class="toast" 
+        role="alert" 
+        aria-live="assertive" 
+        aria-atomic="true"
+    ></div>
 
     <div id="tela-auth" class="tela ativa">
         <div class="auth-card">
+            
             <div class="auth-logo">
                 <div class="logo-icon" id="login-logo-img">
                     <i class="ph ph-chart-pie-slice"></i>
@@ -26,53 +47,86 @@
             <p class="auth-sub" id="auth-desc">Gestão de Alta Performance.</p>
             
             <div id="box-nome" class="campo hidden">
-                <label>Nome Completo</label>
-                <input type="text" id="auth-nome" placeholder="Ex: Jordan Belfort" />
+                <label for="auth-nome">Nome Completo</label>
+                <input 
+                    type="text" 
+                    id="auth-nome" 
+                    placeholder="Ex: Jordan Belfort" 
+                    autocomplete="name"
+                />
             </div>
             
             <div class="campo">
-                <label>E-mail Corporativo</label>
-                <input type="email" id="auth-email" placeholder="seu@email.com" />
+                <label for="auth-email">E-mail Corporativo</label>
+                <input 
+                    type="email" 
+                    id="auth-email" 
+                    placeholder="seu@email.com" 
+                    autocomplete="email"
+                />
             </div>
             
             <div class="campo">
-                <label>Senha de Acesso</label>
-                <input type="password" id="auth-senha" placeholder="••••••••" />
-                <a id="link-esqueceu-senha" style="display: block; font-size: 12px; color: var(--accent); text-align: right; margin-top: 6px; cursor: pointer; font-weight: bold;">
+                <label for="auth-senha">Senha de Acesso</label>
+                <input 
+                    type="password" 
+                    id="auth-senha" 
+                    placeholder="••••••••" 
+                    autocomplete="current-password"
+                />
+                <a 
+                    id="link-esqueceu-senha" 
+                    style="display: block; font-size: 12px; color: var(--accent); text-align: right; margin-top: 6px; cursor: pointer; font-weight: bold;"
+                >
                     Esqueci minha senha
                 </a>
             </div>
 
             <div id="box-senha-confirm" class="campo hidden">
-                <label>Confirmar Senha</label>
-                <input type="password" id="auth-senha-confirm" placeholder="Repita a senha digitada..." />
+                <label for="auth-senha-confirm">Confirmar Senha</label>
+                <input 
+                    type="password" 
+                    id="auth-senha-confirm" 
+                    placeholder="Repita a senha digitada..." 
+                />
             </div>
             
             <div id="box-cargo" class="campo hidden">
-                <label>Seu Nível de Acesso</label>
+                <label for="auth-cargo">Seu Nível de Acesso</label>
                 <select id="auth-cargo">
-                    <option value="vendedor">🧑‍💼 Vendedor (Operação)</option>
-                    <option value="gestor_sub">💼 Gestor Sub (Financeiro)</option>
-                    <option value="gestor_geral">👑 Gestor Geral (Supremo)</option>
+                    <option value="sdr">📞 SDR (Pré-Vendas / Qualificador)</option>
+                    <option value="vendedor">🧑‍💼 Vendedor (Closer)</option>
+                    <option value="cs">🤝 CS (Pós-Venda / Sucesso do Cliente)</option>
+                    <option value="marketing">🚀 Marketing (Gestor de Tráfego / Growth)</option>
+                    <option value="gestor_sub">💼 Gestor Sub (Financeiro / CFO)</option>
+                    <option value="gestor_geral">👑 Gestor Supremo (CEO)</option>
                 </select>
             </div>
 
             <div id="box-chave" class="campo hidden">
-                <label style="color: var(--accent);">
+                <label for="auth-chave" style="color: var(--accent);">
                     <i class="ph ph-key"></i> Chave de Liberação
                 </label>
-                <input type="password" id="auth-chave" placeholder="Digite a chave corporativa..." />
+                <input 
+                    type="password" 
+                    id="auth-chave" 
+                    placeholder="Digite a chave corporativa..." 
+                />
             </div>
 
-            <button class="btn-primary" id="btn-login">Entrar no HAPSIS</button>
+            <button class="btn-primary" id="btn-login">
+                Entrar no HAPSIS
+            </button>
             
             <div class="auth-toggle" id="toggle-modo" data-modo="login">
                 Novo por aqui? <a>cadastrar-se</a>
             </div>
+            
         </div>
     </div>
 
     <div id="tela-app" class="tela">
+        
         <header class="topbar">
             <div class="topbar-logo">
                 <div class="logo-dot" id="app-logo-img">
@@ -83,8 +137,17 @@
             
             <div class="topbar-search">
                 <i class="ph ph-magnifying-glass"></i>
-                <input type="text" id="inp-busca-global" placeholder="Pesquisar registros..." title="Filtra a tela instantaneamente" />
-                <button id="btn-abrir-comandos" title="Abrir Barra Mágica" style="position: absolute; right: 8px; background: rgba(255,255,255,0.08); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;">
+                <input 
+                    type="text" 
+                    id="inp-busca-global" 
+                    placeholder="Pesquisar registros..." 
+                    title="Filtra a tela instantaneamente" 
+                />
+                <button 
+                    id="btn-abrir-comandos" 
+                    title="Abrir Barra Mágica" 
+                    style="position: absolute; right: 8px; background: rgba(255,255,255,0.08); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;"
+                >
                     CTRL K
                 </button>
             </div>
@@ -102,9 +165,11 @@
                         </div>
                     </div>
                 </div>
+                
                 <div class="user-info">
                     <div class="nome" id="user-nome">Carregando...</div>
                 </div>
+                
                 <button class="btn-logout" id="btn-logout" title="Sair do sistema">
                     <i class="ph ph-sign-out"></i>
                 </button>
@@ -115,15 +180,12 @@
             
             <nav class="sidebar">
                 
-                <div class="nav-group vendedor-only">
+                <div class="nav-group modulo-vendas hidden">
                     <div class="sidebar-category cat-operacao">
                         <i class="ph ph-rocket-launch"></i> Operação de Vendas
                     </div>
                     <button class="nav-item ativo" data-aba="aba-kanban">
                         <i class="ph ph-kanban"></i> Pipeline
-                    </button>
-                    <button class="nav-item" data-aba="aba-pos-venda">
-                        <i class="ph ph-handshake"></i> Pós-Venda
                     </button>
                     <button class="nav-item" data-aba="aba-arena">
                         <i class="ph ph-trophy"></i> Arena
@@ -136,7 +198,25 @@
                     </button>
                 </div>
 
-                <div class="nav-group gestor-sub-only hidden">
+                <div class="nav-group modulo-cs hidden">
+                    <div class="sidebar-category cat-visao">
+                        <i class="ph ph-handshake"></i> Customer Success
+                    </div>
+                    <button class="nav-item" data-aba="aba-pos-venda">
+                        <i class="ph ph-users-three"></i> Esteira Pós-Venda
+                    </button>
+                </div>
+
+                <div class="nav-group modulo-marketing hidden">
+                    <div class="sidebar-category cat-saude">
+                        <i class="ph ph-trend-up"></i> Growth & Marketing
+                    </div>
+                    <button class="nav-item" data-aba="aba-growth">
+                        <i class="ph ph-megaphone"></i> Dash de Aquisição
+                    </button>
+                </div>
+
+                <div class="nav-group modulo-cfo hidden">
                     <div class="sidebar-category cat-caixa">
                         <i class="ph ph-wallet"></i> Controle de Caixa
                     </div>
@@ -157,7 +237,7 @@
                         <i class="ph ph-receipt"></i> Contas a Pagar
                     </button>
                     <button class="nav-item" data-aba="aba-cobrancas">
-                        <i class="ph ph-warning-octagon"></i> Inadimplência
+                        <i class="ph ph-warning-octagon"></i> Inadimplência & Estornos
                     </button>
                     <button class="nav-item" data-aba="aba-mrr">
                         <i class="ph ph-arrows-clockwise"></i> Recorrência (MRR)
@@ -177,36 +257,41 @@
                     </button>
                 </div>
 
-                <div class="nav-group admin-shared hidden">
-                    <div class="sidebar-category cat-visao" style="margin-top: 20px;">
-                        <i class="ph ph-chart-line-up"></i> Visão Corporativa
-                    </div>
-                    <button class="nav-item" data-aba="aba-chefao">
-                        <i class="ph ph-trend-up"></i> Dashboard Geral
-                    </button>
-                    <button class="nav-item" data-aba="aba-exportacao">
-                        <i class="ph ph-file-csv"></i> Exportação
-                    </button>
-                </div>
-
-                <div class="nav-group gestor-geral-only hidden">
+                <div class="nav-group modulo-ceo hidden">
                     <div class="sidebar-category cat-diretoria" style="margin-top: 20px;">
                         <i class="ph ph-crown"></i> Diretoria Suprema
                     </div>
+                    <button class="nav-item" data-aba="aba-chefao">
+                        <i class="ph ph-chart-line-up"></i> Dashboard Geral
+                    </button>
                     <button class="nav-item" data-aba="aba-catalogo">
                         <i class="ph ph-percentage"></i> Produtos e Regras
                     </button>
                     <button class="nav-item" data-aba="aba-equipe">
                         <i class="ph ph-users"></i> Gestão de Equipes
                     </button>
-                    <button class="nav-item" data-aba="aba-auditoria">
-                        <i class="ph ph-shield-check"></i> Auditoria de Dados
+                    
+                    <div class="sidebar-category" style="margin-top: 20px; color: #4fc3f7; border-color: rgba(79, 195, 247, 0.2);">
+                        <i class="ph ph-robot" style="color: #4fc3f7;"></i> Automação & Export
+                    </div>
+                    <button class="nav-item" data-aba="aba-automacoes">
+                        <i class="ph ph-tree-structure"></i> Robô Central (Webhooks)
                     </button>
+                    <button class="nav-item" data-aba="aba-auditoria">
+                        <i class="ph ph-shield-check"></i> Auditoria de Leads
+                    </button>
+                    <button class="nav-item" data-aba="aba-exportacao">
+                        <i class="ph ph-file-csv"></i> Exportação de Relatórios
+                    </button>
+                    
+                    <div class="sidebar-category" style="margin-top: 20px; color: #b388ff; border-color: rgba(179, 136, 255, 0.2);">
+                        <i class="ph ph-brain" style="color: #b388ff;"></i> Inteligência
+                    </div>
                     <button class="nav-item" data-aba="aba-config">
                         <i class="ph ph-paint-brush"></i> White-Label
                     </button>
                     <button class="nav-item" data-aba="aba-ia-relatorios" style="color:#b388ff;">
-                        <i class="ph ph-magic-wand"></i> Relatórios IA
+                        <i class="ph ph-magic-wand"></i> Relatórios Preditivos (IA)
                     </button>
                 </div>
             </nav>
@@ -218,7 +303,7 @@
                         <div class="avisos-title">
                             <i class="ph ph-megaphone"></i> Quadro de Avisos
                         </div>
-                        <button class="btn-add admin-shared hidden" id="btn-novo-aviso" onclick="window.criarAviso()">
+                        <button class="btn-add btn-novo-aviso-cfo hidden" id="btn-novo-aviso" onclick="window.criarAviso()">
                             <i class="ph ph-plus"></i> Novo Recado
                         </button>
                     </div>
@@ -233,8 +318,12 @@
                         </div>
                         <div style="display:flex; align-items:center;">
                             <div class="view-toggle">
-                                <button id="btn-view-kanban" class="ativo"><i class="ph ph-kanban"></i></button>
-                                <button id="btn-view-lista"><i class="ph ph-list-dashes"></i></button>
+                                <button id="btn-view-kanban" class="ativo">
+                                    <i class="ph ph-kanban"></i>
+                                </button>
+                                <button id="btn-view-lista">
+                                    <i class="ph ph-list-dashes"></i>
+                                </button>
                             </div>
                             <button class="btn-add" id="btn-novo-lead" style="background:var(--accent); color:#10121a;">
                                 <i class="ph ph-plus-circle"></i> Adicionar Cliente
@@ -272,7 +361,8 @@
                         </div>
                     </div>
                     
-                    <div class="kanban-board" id="kanban-board">
+                    <div class="kanban-board" id="kanban-board" style="grid-template-columns: repeat(5, minmax(240px, 1fr));">
+                        
                         <div class="kanban-col">
                             <div class="col-header">
                                 <span class="col-dot" style="color:var(--novos)"></span>
@@ -281,6 +371,7 @@
                             </div>
                             <div class="kanban-body" id="col-novos" data-status="novos"></div>
                         </div>
+                        
                         <div class="kanban-col">
                             <div class="col-header">
                                 <span class="col-dot" style="color:var(--negociacao)"></span>
@@ -289,6 +380,7 @@
                             </div>
                             <div class="kanban-body" id="col-negociacao" data-status="negociacao"></div>
                         </div>
+                        
                         <div class="kanban-col">
                             <div class="col-header">
                                 <span class="col-dot" style="color:var(--fechados)"></span>
@@ -297,6 +389,7 @@
                             </div>
                             <div class="kanban-body" id="col-fechados" data-status="fechados"></div>
                         </div>
+                        
                         <div class="kanban-col">
                             <div class="col-header">
                                 <span class="col-dot" style="color:var(--danger)"></span>
@@ -305,6 +398,16 @@
                             </div>
                             <div class="kanban-body" id="col-perdidos" data-status="perdidos"></div>
                         </div>
+                        
+                        <div class="kanban-col" style="border-color: rgba(136,144,170,0.3);">
+                            <div class="col-header" style="background: rgba(136,144,170,0.05);">
+                                <span class="col-dot" style="color:var(--muted)"></span>
+                                <span class="col-label" style="color:var(--muted)">Abandonados</span>
+                                <span class="col-count">0</span>
+                            </div>
+                            <div class="kanban-body" id="col-abandonados" data-status="abandonados"></div>
+                        </div>
+                        
                     </div>
 
                     <div class="lista-board hidden" id="lista-board">
@@ -320,57 +423,6 @@
                             </thead>
                             <tbody id="tbody-lista"></tbody>
                         </table>
-                    </div>
-                </section>
-
-                <section id="aba-pos-venda" class="aba-conteudo hidden">
-                    <div class="page-header">
-                        <div>
-                            <div class="page-title" style="color: var(--novos);">Esteira Pós-Venda 🤝</div>
-                            <div class="page-sub">Clientes com pagamento aprovado caem aqui. Acompanhe a retenção e gere Upsell.</div>
-                        </div>
-                    </div>
-                    
-                    <div class="stats-grid" style="margin-bottom: 24px;">
-                        <div class="stat-card" style="border-left: 4px solid var(--novos); background: rgba(79,195,247,0.05);">
-                            <div class="stat-label">Em Onboarding</div>
-                            <div class="stat-val" id="stat-pv-on">0</div>
-                        </div>
-                        <div class="stat-card" style="border-left: 4px solid var(--negociacao); background: rgba(255,183,77,0.05);">
-                            <div class="stat-label">Acompanhamento Ativo</div>
-                            <div class="stat-val" id="stat-pv-ac">0</div>
-                        </div>
-                        <div class="stat-card" style="border-left: 4px solid #b388ff; background: rgba(179,136,255,0.05);">
-                            <div class="stat-label">Prontos para Upsell</div>
-                            <div class="stat-val" id="stat-pv-up" style="color:#b388ff;">0</div>
-                        </div>
-                    </div>
-                    
-                    <div class="kanban-board" id="kanban-pos-venda">
-                        <div class="kanban-col" style="border-top: 3px solid var(--novos);">
-                            <div class="col-header" style="background:transparent;">
-                                <i class="ph ph-hand-waving" style="color:var(--novos); font-size:20px;"></i>
-                                <span class="col-label">Boas-vindas</span>
-                                <span class="col-count" id="count-pv-on">0</span>
-                            </div>
-                            <div class="kanban-body" id="col-pv-onboarding" data-etapa="onboarding"></div>
-                        </div>
-                        <div class="kanban-col" style="border-top: 3px solid var(--negociacao);">
-                            <div class="col-header" style="background:transparent;">
-                                <i class="ph ph-chats-circle" style="color:var(--negociacao); font-size:20px;"></i>
-                                <span class="col-label">Acompanhamento</span>
-                                <span class="col-count" id="count-pv-ac">0</span>
-                            </div>
-                            <div class="kanban-body" id="col-pv-acompanhamento" data-etapa="acompanhamento"></div>
-                        </div>
-                        <div class="kanban-col" style="border-top: 3px solid #b388ff;">
-                            <div class="col-header" style="background:transparent;">
-                                <i class="ph ph-rocket-launch" style="color:#b388ff; font-size:20px;"></i>
-                                <span class="col-label">Pronto para Upsell</span>
-                                <span class="col-count" id="count-pv-up">0</span>
-                            </div>
-                            <div class="kanban-body" id="col-pv-upsell" data-etapa="upsell"></div>
-                        </div>
                     </div>
                 </section>
 
@@ -438,6 +490,112 @@
                         <h3>Distribuição do Funil</h3>
                         <div class="chart-container">
                             <canvas id="chart-pizza"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="aba-pos-venda" class="aba-conteudo hidden">
+                    <div class="page-header">
+                        <div>
+                            <div class="page-title" style="color: var(--novos);">Esteira Pós-Venda 🤝</div>
+                            <div class="page-sub">Clientes com pagamento aprovado caem aqui. Acompanhe a retenção e gere Upsell.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid" style="margin-bottom: 24px;">
+                        <div class="stat-card" style="border-left: 4px solid var(--novos); background: rgba(79,195,247,0.05);">
+                            <div class="stat-label">Em Onboarding</div>
+                            <div class="stat-val" id="stat-pv-on">0</div>
+                        </div>
+                        <div class="stat-card" style="border-left: 4px solid var(--negociacao); background: rgba(255,183,77,0.05);">
+                            <div class="stat-label">Acompanhamento Ativo</div>
+                            <div class="stat-val" id="stat-pv-ac">0</div>
+                        </div>
+                        <div class="stat-card" style="border-left: 4px solid #b388ff; background: rgba(179,136,255,0.05);">
+                            <div class="stat-label">Prontos para Upsell</div>
+                            <div class="stat-val" id="stat-pv-up" style="color:#b388ff;">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="kanban-board" id="kanban-pos-venda">
+                        <div class="kanban-col" style="border-top: 3px solid var(--novos);">
+                            <div class="col-header" style="background:transparent;">
+                                <i class="ph ph-hand-waving" style="color:var(--novos); font-size:20px;"></i>
+                                <span class="col-label">Boas-vindas</span>
+                                <span class="col-count" id="count-pv-on">0</span>
+                            </div>
+                            <div class="kanban-body" id="col-pv-onboarding" data-etapa="onboarding"></div>
+                        </div>
+                        <div class="kanban-col" style="border-top: 3px solid var(--negociacao);">
+                            <div class="col-header" style="background:transparent;">
+                                <i class="ph ph-chats-circle" style="color:var(--negociacao); font-size:20px;"></i>
+                                <span class="col-label">Acompanhamento</span>
+                                <span class="col-count" id="count-pv-ac">0</span>
+                            </div>
+                            <div class="kanban-body" id="col-pv-acompanhamento" data-etapa="acompanhamento"></div>
+                        </div>
+                        <div class="kanban-col" style="border-top: 3px solid #b388ff;">
+                            <div class="col-header" style="background:transparent;">
+                                <i class="ph ph-rocket-launch" style="color:#b388ff; font-size:20px;"></i>
+                                <span class="col-label">Pronto para Upsell</span>
+                                <span class="col-count" id="count-pv-up">0</span>
+                            </div>
+                            <div class="kanban-body" id="col-pv-upsell" data-etapa="upsell"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="aba-growth" class="aba-conteudo hidden">
+                    <div class="page-header">
+                        <div>
+                            <div class="page-title" style="color: var(--novos);">Dashboard de Growth & Aquisição 🚀</div>
+                            <div class="page-sub">Acompanhe a origem dos leads, taxa de conversão e saúde do funil de marketing.</div>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Total de Leads Gerados</div>
+                            <div class="stat-val" id="growth-leads-total">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Taxa de Conversão</div>
+                            <div class="stat-val verde" id="growth-conversao">0%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Custo Estimado (Ad Spend)</div>
+                            <div class="stat-val amarelo" style="display:flex; align-items:center;">
+                                R$ 
+                                <input 
+                                    type="number" 
+                                    id="growth-ad-spend" 
+                                    value="0" 
+                                    style="background:transparent; border:none; border-bottom:1px dashed var(--muted); color:var(--negociacao); font-family:var(--font-head); font-size:24px; font-weight:800; width:120px; outline:none;" 
+                                    onchange="window.atualizarGrowth()"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px;">
+                        <div class="chart-wrapper">
+                            <h3 style="font-size:14px; margin-bottom:16px; color:var(--text); font-family:var(--font-head);">Origem dos Leads</h3>
+                            <div class="chart-container" style="height:220px;">
+                                <canvas id="chart-origem"></canvas>
+                            </div>
+                        </div>
+                        <div class="tabela-wrapper" style="margin: 0;">
+                            <h3 style="padding: 16px; border-bottom: 1px solid var(--border); color: var(--accent); font-family:var(--font-head); font-size:14px;">Performance por Canal</h3>
+                            <table class="lista-table">
+                                <thead>
+                                    <tr>
+                                        <th>Canal de Aquisição</th>
+                                        <th style="text-align:right;">Qtd Leads</th>
+                                        <th style="text-align:right;">Vendas</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-growth-canais">
+                                    <tr><td colspan="3" style="text-align:center; padding:30px; color:var(--muted);">Aguardando dados de origem...</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </section>
@@ -535,7 +693,9 @@
                 <section id="aba-despesas" class="aba-conteudo hidden">
                     <div class="page-header">
                         <div>
-                            <div class="page-title" style="color:var(--danger);"><i class="ph ph-receipt"></i> Contas a Pagar (Despesas)</div>
+                            <div class="page-title" style="color:var(--danger);">
+                                <i class="ph ph-receipt"></i> Contas a Pagar (Despesas)
+                            </div>
                             <div class="page-sub">Controle os custos fixos, ferramentas e tráfego pago da empresa.</div>
                         </div>
                         <button class="btn-add" onclick="document.getElementById('modal-despesa').classList.add('ativa')">
@@ -555,7 +715,9 @@
                                 </tr>
                             </thead>
                             <tbody id="tbody-despesas">
-                                <tr><td colspan="6" style="text-align:center; padding:30px; color:var(--muted);">Nenhuma despesa lançada neste mês.</td></tr>
+                                <tr>
+                                    <td colspan="6" style="text-align:center; padding:30px; color:var(--muted);">Nenhuma despesa lançada neste mês.</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -564,8 +726,10 @@
                 <section id="aba-cobrancas" class="aba-conteudo hidden">
                     <div class="page-header">
                         <div>
-                            <div class="page-title" style="color:var(--negociacao);"><i class="ph ph-warning-octagon"></i> Central de Inadimplência</div>
-                            <div class="page-sub">Recupere vendas não pagas, boletos vencidos ou estornos.</div>
+                            <div class="page-title" style="color:var(--negociacao);">
+                                <i class="ph ph-warning-octagon"></i> Inadimplência e Estornos
+                            </div>
+                            <div class="page-sub">Recupere vendas não pagas e monitore cancelamentos diretos na fonte.</div>
                         </div>
                     </div>
                     <div class="stats-grid">
@@ -579,10 +743,14 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-label">Recuperado</div>
-                            <div class="stat-val verde">R$ 0,00</div>
+                            <div class="stat-val verde" id="cobranca-recuperado">R$ 0,00</div>
                         </div>
                     </div>
-                    <div class="tabela-wrapper">
+                    
+                    <div class="tabela-wrapper" style="margin-bottom: 32px;">
+                        <h3 style="padding: 16px; border-bottom: 1px solid var(--border); color: var(--negociacao);">
+                            <i class="ph ph-clock-user"></i> Atrasados e Inadimplentes
+                        </h3>
                         <table class="lista-table">
                             <thead>
                                 <tr>
@@ -594,7 +762,30 @@
                                 </tr>
                             </thead>
                             <tbody id="tbody-cobrancas">
-                                <tr><td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">Nenhum cliente inadimplente.</td></tr>
+                                <tr>
+                                    <td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">Nenhum cliente inadimplente.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="tabela-wrapper">
+                        <h3 style="padding: 16px; border-bottom: 1px solid var(--border); color: var(--danger);">
+                            <i class="ph ph-trend-down"></i> Monitoramento de Estornos / Chargebacks
+                        </h3>
+                        <table class="lista-table">
+                            <thead>
+                                <tr>
+                                    <th>Cliente Estornado</th>
+                                    <th>Produto Referência</th>
+                                    <th>Justificativa</th>
+                                    <th style="text-align:right;">Valor Subtraído</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-estornos">
+                                <tr>
+                                    <td colspan="4" style="text-align:center; padding:30px; color:var(--muted);">Nenhum estorno registrado na base.</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -603,7 +794,9 @@
                 <section id="aba-mrr" class="aba-conteudo hidden">
                     <div class="page-header">
                         <div>
-                            <div class="page-title" style="color:var(--novos);"><i class="ph ph-arrows-clockwise"></i> Receita Recorrente (MRR)</div>
+                            <div class="page-title" style="color:var(--novos);">
+                                <i class="ph ph-arrows-clockwise"></i> Receita Recorrente (MRR)
+                            </div>
                             <div class="page-sub">Controle de clientes com assinaturas ou pagamentos mensais.</div>
                         </div>
                     </div>
@@ -630,6 +823,7 @@
                                     <th>Plano/Produto</th>
                                     <th style="text-align:right;">Valor Mensal</th>
                                     <th>Status</th>
+                                    <th style="text-align:center;">Ação</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-mrr"></tbody>
@@ -640,11 +834,13 @@
                 <section id="aba-contratos" class="aba-conteudo hidden">
                     <div class="page-header">
                         <div>
-                            <div class="page-title" style="color:var(--text);"><i class="ph ph-folder-lock"></i> Cofre de Contratos (GED)</div>
-                            <div class="page-sub">Documentos fiscais e contratos em PDF enviados pelos vendedores.</div>
+                            <div class="page-title" style="color:var(--text);">
+                                <i class="ph ph-folder-lock"></i> Cofre de Contratos (GED)
+                            </div>
+                            <div class="page-sub">Documentos fiscais e contratos em PDF centralizados.</div>
                         </div>
-                        <button class="btn-add" onclick="mostrarToast('Por segurança, faça o upload do Contrato diretamente na Gaveta do Cliente (no Kanban). Ele aparecerá aqui automaticamente.', 'ok')">
-                            <i class="ph ph-info"></i> Onde fazer o Upload?
+                        <button class="btn-add" onclick="window.abrirModalUploadCofre()">
+                            <i class="ph ph-upload-simple"></i> Fazer Upload
                         </button>
                     </div>
                     <div class="tabela-wrapper">
@@ -652,13 +848,15 @@
                             <thead>
                                 <tr>
                                     <th>Cliente</th>
-                                    <th>Produto Relacionado</th>
+                                    <th>Tipo de Arquivo</th>
                                     <th>Data de Envio</th>
-                                    <th style="text-align:right;">Visualizar Contrato</th>
+                                    <th style="text-align:right;">Visualizar Arquivo</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-contratos">
-                                <tr><td colspan="4" style="text-align:center; padding:30px; color:var(--muted);">Cofre vazio.</td></tr>
+                                <tr>
+                                    <td colspan="4" style="text-align:center; padding:30px; color:var(--muted);">Cofre vazio.</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -667,7 +865,9 @@
                 <section id="aba-auditoria-descontos" class="aba-conteudo hidden">
                     <div class="page-header">
                         <div>
-                            <div class="page-title" style="color:var(--danger);"><i class="ph ph-scissors"></i> Auditoria de Descontos (Margem)</div>
+                            <div class="page-title" style="color:var(--danger);">
+                                <i class="ph ph-scissors"></i> Auditoria de Descontos (Margem)
+                            </div>
                             <div class="page-sub">Monitoramento automático de vendedores que venderam abaixo do preço de catálogo.</div>
                         </div>
                     </div>
@@ -690,7 +890,9 @@
                 <section id="aba-bonus" class="aba-conteudo hidden">
                     <div class="page-header">
                         <div>
-                            <div class="page-title" style="color:#b388ff;"><i class="ph ph-gift"></i> Gestão de Premiações (Bônus)</div>
+                            <div class="page-title" style="color:#b388ff;">
+                                <i class="ph ph-gift"></i> Gestão de Premiações (Bônus)
+                            </div>
                             <div class="page-sub">Crie metas financeiras extraordinárias e recompense quem bater.</div>
                         </div>
                         <button class="btn-add" style="background:rgba(179,136,255,0.1); color:#b388ff; border-color:#b388ff;" onclick="document.getElementById('modal-bonus').classList.add('ativa')">
@@ -727,6 +929,7 @@
                                 <option value="fechados">Aprovadas</option>
                                 <option value="abertos">Abertas</option>
                                 <option value="perdidos">Perdidas</option>
+                                <option value="abandonados">Abandonados / Ghosting</option>
                             </select>
                         </div>
                         <div class="export-actions">
@@ -963,6 +1166,48 @@
                         </form>
                     </div>
                 </section>
+                
+                <section id="aba-automacoes" class="aba-conteudo hidden">
+                    <div class="page-header">
+                        <div>
+                            <div class="page-title" style="color: var(--novos);">Central de Automações (Robô) 🤖</div>
+                            <div class="page-sub">Configure aprovações instantâneas e webhooks para plataformas de pagamento.</div>
+                        </div>
+                        <button class="btn-primary" style="width:auto; background:var(--novos); color:#10121a;" onclick="mostrarToast('Configurações do Robô salvas com sucesso!', 'ok')">
+                            Salvar Automações
+                        </button>
+                    </div>
+                    
+                    <div class="tabela-wrapper" style="padding: 24px; margin-bottom: 24px;">
+                        <h3 style="margin-bottom: 20px; color:var(--text); font-family:var(--font-head); font-size: 16px;">Webhooks & Plataformas</h3>
+                        <div class="campo" style="margin-bottom: 0;">
+                            <label>URL de Recepção (Endpoint) - Cole isso na Kirvano/Asaas/Kiwify</label>
+                            <div style="display:flex; gap:10px;">
+                                <input type="text" value="https://api.hapsis.com/v1/webhooks/pay" readonly style="color:var(--novos); font-family:monospace; font-size: 14px; background: rgba(56, 189, 248, 0.05);" />
+                                <button class="btn-cancel" style="width:auto;" onclick="mostrarToast('URL Copiada para a área de transferência!', 'ok')"><i class="ph ph-copy"></i> Copiar</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tabela-wrapper" style="padding: 24px;">
+                        <h3 style="margin-bottom: 20px; color:var(--text); font-family:var(--font-head); font-size: 16px;">Regras Automáticas do Sistema</h3>
+                        <div style="display:flex; flex-direction:column; gap:16px;">
+                            <label style="display:flex; align-items:center; gap:12px; cursor:pointer; background: var(--bg2); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                                <input type="checkbox" checked style="width:20px; height:20px; accent-color:var(--novos);" />
+                                <span style="color: var(--text2); font-size: 14px;"><strong style="color:var(--text);">Aprovação Automática:</strong> Quando a plataforma externa confirmar o pagamento via Webhook, aprovar a venda no Financeiro automaticamente e jogar pro Pós-Venda.</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:12px; cursor:pointer; background: var(--bg2); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                                <input type="checkbox" checked style="width:20px; height:20px; accent-color:var(--novos);" />
+                                <span style="color: var(--text2); font-size: 14px;"><strong style="color:var(--text);">Cobrança Automática:</strong> Mover cliente para a Central de Inadimplência automaticamente se a plataforma avisar que o boleto venceu ou o cartão falhou.</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:12px; cursor:pointer; background: var(--bg2); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                                <input type="checkbox" style="width:20px; height:20px; accent-color:var(--novos);" />
+                                <span style="color: var(--text2); font-size: 14px;"><strong style="color:var(--text);">Roleta de SDR (Round-Robin):</strong> Distribuir leads novos de forma automática e igualitária entre todos os vendedores (closers) ativos no sistema.</span>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
             </main>
         </div>
     </div>
@@ -977,47 +1222,61 @@
             </div>
             <form id="form-lead">
                 <div class="campo">
-                    <label>Nome Completo</label>
+                    <label for="inp-nome">Nome Completo</label>
                     <input type="text" id="inp-nome" required />
                 </div>
                 <div class="campo">
-                    <label>WhatsApp</label>
+                    <label for="inp-whatsapp">WhatsApp</label>
                     <input type="tel" id="inp-whatsapp" required />
                 </div>
+                
                 <div style="display:flex; gap:16px;">
                     <div class="campo" style="flex:2;">
-                        <label>Produto</label>
+                        <label for="inp-produto">Produto de Interesse</label>
                         <select id="inp-produto" required>
                             <option value="">Carregando...</option>
                         </select>
                     </div>
                     <div class="campo" style="flex:1;">
-                        <label>Valor (R$)</label>
+                        <label for="inp-valor">Valor (R$)</label>
                         <input type="number" id="inp-valor" min="0" step="0.01" required />
                     </div>
                 </div>
+                
                 <div style="display:flex; gap:16px;">
                     <div class="campo" style="flex:1;">
-                        <label>Forma de Pagamento</label>
+                        <label for="inp-origem">Origem do Lead</label>
+                        <select id="inp-origem">
+                            <option value="Indicação">Indicação Direta</option>
+                            <option value="Meta Ads">Meta Ads (Facebook/Insta)</option>
+                            <option value="Google Ads">Google Ads</option>
+                            <option value="Orgânico">Orgânico (Redes Sociais)</option>
+                            <option value="Outros">Outros Canais</option>
+                        </select>
+                    </div>
+                    <div class="campo" style="flex:1;">
+                        <label for="inp-pagamento">Forma de Pagamento</label>
                         <select id="inp-pagamento">
                             <option value="Pix">Pix</option>
                             <option value="Cartão de Crédito">Cartão de Crédito</option>
                             <option value="Boleto">Boleto Bancário</option>
                         </select>
                     </div>
-                    <div class="campo" style="flex:1;">
-                        <label>Etapa Atual</label>
-                        <select id="inp-status">
-                            <option value="novos">Acabou de Chegar</option>
-                            <option value="negociacao">Negociando</option>
-                            <option value="fechados">Já Comprou!</option>
-                        </select>
-                    </div>
+                </div>
+                
+                <div class="campo">
+                    <label for="inp-status">Etapa Atual</label>
+                    <select id="inp-status">
+                        <option value="novos">Acabou de Chegar (Novo)</option>
+                        <option value="negociacao">Em Negociação</option>
+                        <option value="fechados">Venda Fechada!</option>
+                        <option value="abandonados">Abandonado / Ghosting</option>
+                    </select>
                 </div>
                 
                 <div class="campo" style="background: rgba(79, 195, 247, 0.05); border: 1px solid rgba(79, 195, 247, 0.3); padding: 16px; border-radius: 8px;">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text); margin: 0;">
-                        <input type="checkbox" id="inp-is-recorrente" style="width: 20px; height: 20px; cursor: pointer;" />
+                    <label for="inp-is-recorrente" style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text); margin: 0;">
+                        <input type="checkbox" id="inp-is-recorrente" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--novos);" />
                         <span style="font-weight: bold; color: var(--novos);">Este produto é uma Assinatura Mensal (MRR)?</span>
                     </label>
                 </div>
@@ -1045,11 +1304,12 @@
                 <input type="hidden" id="drawer-lead-id" />
                 
                 <div class="drawer-section">
-                    <h4><i class="ph ph-identification-badge"></i> Dados</h4>
+                    <h4><i class="ph ph-identification-badge"></i> Dados do Cliente</h4>
                     <p id="drawer-wpp" style="color: #fff; font-weight: bold; margin-bottom: 16px;">Wpp</p>
+                    
                     <div style="display:flex; justify-content: space-between; margin-bottom: 16px;">
                         <div>
-                            <span style="font-size:11px; color:var(--muted); display:block;">Produto</span>
+                            <span style="font-size:11px; color:var(--muted); display:block;">Produto Escolhido</span>
                             <p id="drawer-produto" style="color: #fff; font-weight: bold;">Prod</p>
                         </div>
                         <div style="text-align:right;">
@@ -1057,21 +1317,38 @@
                             <p id="drawer-pagamento" style="color: #fff; font-weight: bold;">Pix</p>
                         </div>
                     </div>
-                    <p id="drawer-valor" style="color: var(--fechados); font-weight: 800; font-size: 20px;">R$ 0</p>
+                    
+                    <div style="display:flex; justify-content: space-between; align-items:flex-end;">
+                        <div>
+                            <span style="font-size:11px; color:var(--muted); display:block;">Origem (Tráfego)</span>
+                            <p id="drawer-origem" style="color: var(--muted2); font-weight: bold;">Orgânico</p>
+                        </div>
+                        <p id="drawer-valor" style="color: var(--fechados); font-weight: 800; font-size: 20px;">R$ 0</p>
+                    </div>
+                </div>
+
+                <div class="drawer-section" id="box-repassar-lead" style="border-color: var(--negociacao); display: none;">
+                    <h4><i class="ph ph-arrows-left-right" style="color: var(--negociacao);"></i> Repassar Lead (SDR para Closer)</h4>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <select id="inp-repassar-vendedor" style="width:100%; padding:10px; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:6px; outline:none; font-family:var(--font-body);"></select>
+                        <button class="btn-cancel" onclick="window.repassarLead()" style="width:auto; padding:10px 16px; border-color:var(--negociacao); color:var(--negociacao);">
+                            <i class="ph ph-paper-plane-right"></i> Enviar
+                        </button>
+                    </div>
                 </div>
 
                 <div class="drawer-section">
-                    <h4><i class="ph ph-notebook"></i> Anotações</h4>
-                    <textarea id="drawer-notas" style="width: 100%; height: 120px; resize: vertical; border-radius: 8px; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border2); color: #fff;"></textarea>
+                    <h4><i class="ph ph-notebook"></i> Anotações do Lead</h4>
+                    <textarea id="drawer-notas" style="width: 100%; height: 120px; resize: vertical; border-radius: 8px; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border2); color: #fff; outline:none;"></textarea>
                 </div>
                 
                 <div class="drawer-section" style="border-color: var(--accent);">
-                    <h4><i class="ph ph-calendar-plus" style="color: var(--accent);"></i> Follow-up</h4>
-                    <input type="date" id="drawer-data-followup" style="width: 100%; padding: 14px; border-radius: 8px; background: rgba(245,197,24,0.05); border: 1px solid var(--accent); color: var(--accent); font-weight: bold; cursor: pointer;" />
+                    <h4><i class="ph ph-calendar-plus" style="color: var(--accent);"></i> Próximo Follow-up</h4>
+                    <input type="date" id="drawer-data-followup" style="width: 100%; padding: 14px; border-radius: 8px; background: rgba(245,197,24,0.05); border: 1px solid var(--accent); color: var(--accent); font-weight: bold; cursor: pointer; outline:none;" />
                 </div>
                 
                 <div class="drawer-section" style="border-color: var(--novos);">
-                    <h4><i class="ph ph-receipt" style="color: var(--novos);"></i> Comprovante do PIX/Cartão</h4>
+                    <h4><i class="ph ph-receipt" style="color: var(--novos);"></i> Comprovante (PIX/Cartão)</h4>
                     <input type="file" id="drawer-file-comprovante" accept="image/*,.pdf" style="display: none;" />
                     <div style="display:flex; gap:10px; align-items:center;">
                         <button class="btn-cancel" onclick="document.getElementById('drawer-file-comprovante').click()" style="width:auto; padding:8px 16px;">
@@ -1097,9 +1374,23 @@
                         <a href="#" id="link-ver-contrato" target="_blank" class="btn-anexo" style="border-color:#b388ff; color:#b388ff;">Ver contrato guardado</a>
                     </div>
                 </div>
+
+                <div class="drawer-section" style="border-color: #4fc3f7;">
+                    <h4><i class="ph ph-file-text" style="color: #4fc3f7;"></i> Docs Importantes (RG, Fichas)</h4>
+                    <input type="file" id="drawer-file-doc" accept=".pdf,image/*" style="display: none;" />
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button class="btn-cancel" onclick="document.getElementById('drawer-file-doc').click()" style="width:auto; padding:8px 16px; border-color: #4fc3f7; color: #4fc3f7;">
+                            <i class="ph ph-upload-simple"></i> Anexar Doc
+                        </button>
+                        <span id="nome-arquivo-doc" style="font-size:12px; color:var(--muted);">Nenhum doc</span>
+                    </div>
+                    <div id="box-ver-doc" class="hidden" style="margin-top: 16px;">
+                        <a href="#" id="link-ver-doc" target="_blank" class="btn-anexo" style="border-color:#4fc3f7; color:#4fc3f7;">Ver documento salvo</a>
+                    </div>
+                </div>
                 
                 <div class="drawer-section" style="border-color: var(--border2);">
-                    <h4><i class="ph ph-clock-counter-clockwise"></i> Histórico</h4>
+                    <h4><i class="ph ph-clock-counter-clockwise"></i> Histórico de Atividades</h4>
                     <div id="drawer-historico" style="font-size:12px; color:var(--muted); max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
                 </div>
 
@@ -1129,6 +1420,45 @@
         </div>
     </div>
 
+    <div id="modal-upload-cofre" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span class="modal-title">
+                    <i class="ph ph-upload-simple" style="color:var(--novos);"></i> Enviar Documento
+                </span>
+                <button class="btn-fechar" onclick="document.getElementById('modal-upload-cofre').classList.remove('ativa')">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <form id="form-upload-cofre">
+                <div class="campo">
+                    <label for="inp-upload-cliente">Vincular a qual Cliente?</label>
+                    <select id="inp-upload-cliente" required></select>
+                </div>
+                <div class="campo">
+                    <label for="inp-upload-tipo">Tipo de Documento</label>
+                    <select id="inp-upload-tipo" required>
+                        <option value="contrato_url">Contrato Assinado (PDF)</option>
+                        <option value="doc_importante_url">Documento Importante (RG, Ficha)</option>
+                        <option value="comprovante_url">Comprovante de Pagamento</option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label for="inp-upload-arquivo">Arquivo</label>
+                    <input 
+                        type="file" 
+                        id="inp-upload-arquivo" 
+                        required 
+                        style="background: var(--bg2); border: 1px dashed var(--border); padding: 20px; text-align: center; cursor: pointer;" 
+                    />
+                </div>
+                <button type="submit" class="btn-primary" style="background: var(--novos); color: #0a0c11;">
+                    <i class="ph ph-cloud-arrow-up"></i> Salvar no Cofre
+                </button>
+            </form>
+        </div>
+    </div>
+
     <div id="modal-despesa" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
@@ -1141,16 +1471,16 @@
             </div>
             <form id="form-despesa">
                 <div class="campo">
-                    <label>Descrição do Custo</label>
+                    <label for="inp-desp-desc">Descrição do Custo</label>
                     <input type="text" id="inp-desp-desc" placeholder="Ex: Meta Ads, Aluguel, Sistema" required />
                 </div>
                 <div style="display:flex; gap:16px;">
                     <div class="campo">
-                        <label>Valor (R$)</label>
+                        <label for="inp-desp-valor">Valor (R$)</label>
                         <input type="number" id="inp-desp-valor" step="0.01" required />
                     </div>
                     <div class="campo">
-                        <label>Data de Vencimento</label>
+                        <label for="inp-desp-data">Data de Vencimento</label>
                         <input type="date" id="inp-desp-data" required />
                     </div>
                 </div>
@@ -1173,16 +1503,16 @@
             </div>
             <form id="form-bonus">
                 <div class="campo">
-                    <label>Nome da Campanha</label>
+                    <label for="inp-bonus-titulo">Nome da Campanha</label>
                     <input type="text" id="inp-bonus-titulo" placeholder="Ex: Tubarão de Janeiro" required />
                 </div>
                 <div style="display:flex; gap:16px;">
                     <div class="campo">
-                        <label>Meta a Bater (R$)</label>
+                        <label for="inp-bonus-meta">Meta a Bater (R$)</label>
                         <input type="number" id="inp-bonus-meta" step="0.01" required />
                     </div>
                     <div class="campo">
-                        <label>Prêmio Extra (R$)</label>
+                        <label for="inp-bonus-premio">Prêmio Extra (R$)</label>
                         <input type="number" id="inp-bonus-premio" step="0.01" required />
                     </div>
                 </div>
@@ -1206,18 +1536,18 @@
             <form id="form-motivo-perda">
                 <input type="hidden" id="inp-perda-lead-id" />
                 <div class="campo">
-                    <label>Por qual motivo perdemos a venda?</label>
+                    <label for="inp-perda-motivo">Por qual motivo perdemos a venda?</label>
                     <select id="inp-perda-motivo" required>
                         <option value="Achou caro">Achou caro</option>
                         <option value="Concorrente">Concorrente</option>
-                        <option value="Parou de responder">Ghosting</option>
+                        <option value="Abandonou / Ghosting">Parou de responder / Ghosting</option>
                         <option value="Não tem perfil">Sem perfil</option>
                         <option value="Outro">Outro Motivo</option>
                     </select>
                 </div>
                 
                 <div class="campo" id="box-motivo-custom" style="display:none; margin-top: 12px;">
-                    <label>Descreva o motivo detalhadamente</label>
+                    <label for="inp-perda-motivo-custom">Descreva o motivo detalhadamente</label>
                     <textarea id="inp-perda-motivo-custom" rows="3" placeholder="Digite o motivo específico de forma clara..."></textarea>
                 </div>
 
@@ -1255,10 +1585,15 @@
             </div>
 
             <div style="border-top: 1px solid var(--border); padding-top: 20px;">
-                <label style="display:block; font-size:12px; color:var(--muted); margin-bottom:10px; font-weight:bold; text-transform:uppercase;">
+                <label for="wpp-custom-msg" style="display:block; font-size:12px; color:var(--muted); margin-bottom:10px; font-weight:bold; text-transform:uppercase;">
                     Ou digite uma mensagem livre:
                 </label>
-                <textarea id="wpp-custom-msg" rows="4" placeholder="Escreva sua própria mensagem aqui..." style="width: 100%; background: #0d0f18; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 14px; color: var(--text); font-family: var(--font-body); font-size: 14px; outline: none; margin-bottom: 12px; resize: vertical;"></textarea>
+                <textarea 
+                    id="wpp-custom-msg" 
+                    rows="4" 
+                    placeholder="Escreva sua própria mensagem aqui..." 
+                    style="width: 100%; background: #0d0f18; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 14px; color: var(--text); font-family: var(--font-body); font-size: 14px; outline: none; margin-bottom: 12px; resize: vertical;"
+                ></textarea>
                 
                 <button class="btn-primary" onclick="window.enviarWhatsApp('custom')" style="background: #25d366; color: #10121a;">
                     <i class="ph ph-paper-plane-right"></i> Enviar Mensagem
@@ -1279,7 +1614,7 @@
             </div>
             <form id="form-recuperar-senha">
                 <div class="campo">
-                    <label>E-mail</label>
+                    <label for="inp-recuperar-email">E-mail</label>
                     <input type="email" id="inp-recuperar-email" required />
                 </div>
                 <button type="submit" class="btn-primary">Enviar Link</button>
@@ -1296,7 +1631,7 @@
             </div>
             <form id="form-nova-senha">
                 <div class="campo">
-                    <label>Nova Senha</label>
+                    <label for="inp-nova-senha">Nova Senha</label>
                     <input type="password" id="inp-nova-senha" required />
                 </div>
                 <button type="submit" class="btn-primary" style="background:var(--fechados);">Salvar</button>
@@ -1314,16 +1649,16 @@
             </div>
             <form id="form-produto">
                 <div class="campo">
-                    <label>Nome</label>
+                    <label for="inp-prod-nome">Nome</label>
                     <input type="text" id="inp-prod-nome" required />
                 </div>
                 <div style="display:flex; gap:16px;">
                     <div class="campo">
-                        <label>Preço Base</label>
+                        <label for="inp-prod-preco">Preço Base</label>
                         <input type="number" id="inp-prod-preco" step="0.01" required />
                     </div>
                     <div class="campo">
-                        <label>Comissão (%)</label>
+                        <label for="inp-prod-comissao">Comissão (%)</label>
                         <input type="number" id="inp-prod-comissao" step="0.1" required />
                     </div>
                 </div>
@@ -1342,11 +1677,11 @@
             </div>
             <form id="form-nova-equipe">
                 <div class="campo">
-                    <label>Nome</label>
+                    <label for="inp-add-squad-nome">Nome</label>
                     <input type="text" id="inp-add-squad-nome" required />
                 </div>
                 <div class="campo">
-                    <label>Líder</label>
+                    <label for="inp-add-squad-user">Líder</label>
                     <select id="inp-add-squad-user" required></select>
                 </div>
                 <button type="submit" class="btn-primary">Criar</button>
@@ -1357,7 +1692,7 @@
     <div id="modal-mudar-equipe" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
-                <span class="modal-title">Mover</span>
+                <span class="modal-title">Mover Usuário</span>
                 <button class="btn-fechar" id="btn-fechar-modal-equipe">
                     <i class="ph ph-x"></i>
                 </button>
@@ -1365,14 +1700,14 @@
             <form id="form-mudar-equipe">
                 <input type="hidden" id="inp-equipe-userid" />
                 <div class="campo">
-                    <label>Squad Atual</label>
+                    <label for="inp-equipe-select">Squad Atual</label>
                     <select id="inp-equipe-select"></select>
                 </div>
                 <div class="campo">
-                    <label>Novo Squad</label>
+                    <label for="inp-equipe-nova">Novo Squad (Se não existir, digite)</label>
                     <input type="text" id="inp-equipe-nova" />
                 </div>
-                <button type="submit" class="btn-primary">Salvar</button>
+                <button type="submit" class="btn-primary">Salvar Alteração</button>
             </form>
         </div>
     </div>
@@ -1380,21 +1715,21 @@
     <div id="modal-aviso" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
-                <span class="modal-title">Aviso</span>
+                <span class="modal-title">Disparar Aviso</span>
                 <button class="btn-fechar" id="btn-fechar-aviso">
                     <i class="ph ph-x"></i>
                 </button>
             </div>
             <form id="form-aviso">
                 <div class="campo">
-                    <label>Assunto</label>
+                    <label for="inp-aviso-titulo">Assunto do Recado</label>
                     <input type="text" id="inp-aviso-titulo" required />
                 </div>
                 <div class="campo">
-                    <label>Mensagem</label>
+                    <label for="inp-aviso-msg">Mensagem para a Equipe</label>
                     <textarea id="inp-aviso-msg" required></textarea>
                 </div>
-                <button type="submit" class="btn-primary">Disparar</button>
+                <button type="submit" class="btn-primary">Disparar no Mural</button>
             </form>
         </div>
     </div>
@@ -1416,7 +1751,7 @@
     <div id="modal-acessos" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
-                <span class="modal-title">Acessos</span>
+                <span class="modal-title">Painel de Acessos</span>
                 <button class="btn-fechar" onclick="document.getElementById('modal-acessos').classList.remove('ativa')">
                     <i class="ph ph-x"></i>
                 </button>
@@ -1440,14 +1775,14 @@
     <div id="modal-meta" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
-                <span class="modal-title">Meta</span>
+                <span class="modal-title">Ajustar Meta Global</span>
                 <button class="btn-fechar" onclick="document.getElementById('modal-meta').classList.remove('ativa')">
                     <i class="ph ph-x"></i>
                 </button>
             </div>
             <form id="form-meta">
                 <div class="campo">
-                    <label>Valor (R$)</label>
+                    <label for="inp-nova-meta">Valor (R$)</label>
                     <input type="number" id="inp-nova-meta" step="0.01" required />
                 </div>
                 <button type="submit" class="btn-primary">Salvar Meta</button>

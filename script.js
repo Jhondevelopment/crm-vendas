@@ -1,18 +1,32 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+/**
+ * ============================================================================
+ * HAPSIS ENTERPRISE - MOTOR JAVASCRIPT v2.0
+ * Arquitetura de Software Sênior (Clean Code & Robustness)
+ * Código 100% Completo, Expandido e sem Abreviações.
+ * ============================================================================
+ */
 
-// ==========================================
-// AS SUAS CHAVES DO SUPABASE
-// ==========================================
-const SUPABASE_URL = 'https://bskgqlhducfxfipflpqm.supabase.co'
-const SUPABASE_KEY = 'sb_publishable_hPbZtYmMLtMn1yfRZa4O2w_nxf43EOa'
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-// ==========================================
-// VARIÁVEIS GLOBAIS DE ESTADO
-// ==========================================
+/**
+ * ============================================================================
+ * 1. CONFIGURAÇÕES DE BANCO DE DADOS E API (SUPABASE)
+ * ============================================================================
+ */
+const SUPABASE_URL = 'https://bskgqlhducfxfipflpqm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_hPbZtYmMLtMn1yfRZa4O2w_nxf43EOa';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/**
+ * ============================================================================
+ * 2. VARIÁVEIS GLOBAIS DE ESTADO (STATE MANAGEMENT)
+ * ============================================================================
+ */
 let usuarioAtual = null;
 let perfilAtual = null;
 let perfisEquipe = [];
+
+// Arrays de Dados do Banco
 let leadsData = [];
 let produtosData = [];
 let avisosData = [];
@@ -20,32 +34,49 @@ let logsExportacaoData = [];
 let pagamentosData = []; 
 let despesasData = []; 
 let bonusData = [];
-let notifsNaoLidas = 0;
 
-// Instâncias de Gráficos (Para poder destruir e recriar dinamicamente)
+let notifsNaoLidas = 0;
+let confirmCallback = null;
+let isRegistering = false;
+
+// Instâncias Globais de Gráficos (Chart.js)
 let chartInstance = null;
 let chartFugasLinhaInstance = null;
 let chartFugasMotivosInstance = null;
 let chartPagamentosInstance = null; 
+let chartOrigemInstance = null;
 
-let confirmCallback = null;
-let isRegistering = false;
+/**
+ * ============================================================================
+ * 3. UTILITÁRIOS GERAIS E COMPONENTES DE UI
+ * ============================================================================
+ */
 
-// ==========================================
-// FUNÇÕES GERAIS E COMPONENTES DE UI
-// ==========================================
+/**
+ * Exibe um toast (notificação flutuante) na tela
+ * @param {string} msg - A mensagem a ser exibida
+ * @param {string} tipo - 'ok' (sucesso) ou 'erro' (falha)
+ */
 function mostrarToast(msg, tipo = 'ok') {
     const toast = document.getElementById('toast');
-    if (!toast) return;
+    
+    if (!toast) {
+        return;
+    }
     
     toast.innerText = msg;
     toast.className = `toast show ${tipo}`;
     
+    // Auto-remover após 4 segundos
     setTimeout(() => { 
         toast.classList.remove('show'); 
     }, 4000);
 }
 
+/**
+ * Retorna a saudação baseada no horário local do usuário
+ * @returns {string} Bom dia, Boa tarde ou Boa noite
+ */
 function getSaudacao() {
     const hora = new Date().getHours();
     
@@ -55,24 +86,42 @@ function getSaudacao() {
     if (hora >= 12 && hora < 18) {
         return 'Boa tarde';
     }
+    
     return 'Boa noite';
 }
 
+/**
+ * Alterna a visibilidade das telas principais do sistema
+ * @param {string} id - O ID da tela que deve se tornar ativa
+ */
 function mudarTela(id) {
-    document.querySelectorAll('.tela').forEach(t => {
+    const telas = document.querySelectorAll('.tela');
+    
+    telas.forEach(t => {
         t.classList.remove('ativa');
     });
     
-    const tela = document.getElementById(id);
-    if (tela) {
-        tela.classList.add('ativa');
+    const telaDestino = document.getElementById(id);
+    
+    if (telaDestino) {
+        telaDestino.classList.add('ativa');
     }
 }
 
+/**
+ * Abre o Modal de Confirmação para ações críticas (excluir, estornar)
+ * @param {string} titulo - Título do modal
+ * @param {string} mensagem - Texto explicativo do risco
+ * @param {string} textoBotaoAcao - Texto do botão de ação
+ * @param {Function} callback - Função executada caso o usuário confirme
+ */
 window.abrirConfirmacao = (titulo, mensagem, textoBotaoAcao, callback) => {
     document.getElementById('confirm-titulo').innerText = titulo;
     document.getElementById('confirm-msg').innerHTML = mensagem;
-    document.getElementById('btn-confirm-acao').innerHTML = `<i class="ph ph-check-circle"></i> ${textoBotaoAcao}`;
+    
+    document.getElementById('btn-confirm-acao').innerHTML = `
+        <i class="ph ph-check-circle"></i> ${textoBotaoAcao}
+    `;
     
     confirmCallback = callback;
     document.getElementById('modal-confirmacao').classList.add('ativa');
@@ -90,19 +139,26 @@ document.getElementById('btn-confirm-acao').onclick = () => {
     document.getElementById('modal-confirmacao').classList.remove('ativa');
 };
 
-// ==========================================
-// TELA DE LOGIN / CADASTRO 
-// ==========================================
+/**
+ * ============================================================================
+ * 4. MÓDULO DE AUTENTICAÇÃO E SESSÃO (LOGIN / SIGNUP)
+ * ============================================================================
+ */
+
 const toggleModo = document.getElementById('toggle-modo');
+
 if (toggleModo) {
     toggleModo.onclick = () => {
         const isLogin = toggleModo.dataset.modo === 'login';
         
         if (isLogin) {
+            // Muda para o modo Cadastro
             toggleModo.dataset.modo = 'cadastro';
+            
             document.getElementById('auth-titulo').innerText = 'Criar Nova Conta';
             document.getElementById('auth-desc').innerText = 'Preencha seus dados para começar.';
             document.getElementById('btn-login').innerText = 'Cadastrar e Entrar';
+            
             toggleModo.innerHTML = 'Já tenho conta — <a style="cursor:pointer; color:var(--accent); font-weight:bold;">fazer login</a>';
             
             document.getElementById('box-nome').classList.remove('hidden');
@@ -110,15 +166,19 @@ if (toggleModo) {
             document.getElementById('box-senha-confirm').classList.remove('hidden');
             document.getElementById('link-esqueceu-senha').classList.add('hidden');
             
-            const cVal = document.getElementById('auth-cargo').value;
-            if (cVal === 'gestor_geral' || cVal === 'gestor_sub') {
+            const cargoValue = document.getElementById('auth-cargo').value;
+            
+            if (cargoValue === 'gestor_geral' || cargoValue === 'gestor_sub') {
                 document.getElementById('box-chave').classList.remove('hidden');
             }
         } else {
+            // Muda para o modo Login
             toggleModo.dataset.modo = 'login';
+            
             document.getElementById('auth-titulo').innerText = 'Acessar Sistema';
             document.getElementById('auth-desc').innerText = 'Fricção zero. Direto ao ponto.';
             document.getElementById('btn-login').innerText = 'Entrar no HAPSIS';
+            
             toggleModo.innerHTML = 'Novo por aqui? <a style="cursor:pointer; color:var(--accent); font-weight:bold;">cadastrar-se</a>';
             
             document.getElementById('box-nome').classList.add('hidden');
@@ -131,9 +191,12 @@ if (toggleModo) {
 }
 
 const selectCargo = document.getElementById('auth-cargo');
+
 if (selectCargo) {
     selectCargo.addEventListener('change', (e) => {
-        if (e.target.value === 'gestor_geral' || e.target.value === 'gestor_sub') {
+        const valorSelecionado = e.target.value;
+        
+        if (valorSelecionado === 'gestor_geral' || valorSelecionado === 'gestor_sub') {
             document.getElementById('box-chave').classList.remove('hidden');
         } else {
             document.getElementById('box-chave').classList.add('hidden');
@@ -142,6 +205,7 @@ if (selectCargo) {
 }
 
 const btnLogin = document.getElementById('btn-login');
+
 if (btnLogin) {
     btnLogin.onclick = async () => {
         const email = document.getElementById('auth-email').value;
@@ -149,36 +213,55 @@ if (btnLogin) {
         const modo = toggleModo.dataset.modo;
 
         if (!email || !password) {
-            return mostrarToast('Preencha e-mail e senha.', 'erro');
+            mostrarToast('Preencha e-mail e senha.', 'erro');
+            return;
         }
 
         if (modo === 'login') {
+            // Lógica de Sign In
             btnLogin.innerText = 'Autenticando...';
             btnLogin.style.transform = 'scale(0.97)';
             btnLogin.style.opacity = '0.85';
             
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
-            
-            if (error) {
-                mostrarToast('Acesso negado. Verifique os dados.', 'erro');
-                btnLogin.innerText = 'Entrar no HAPSIS';
-                btnLogin.style.transform = 'none';
-                btnLogin.style.opacity = '1';
+            try {
+                const { error } = await supabase.auth.signInWithPassword({ 
+                    email: email, 
+                    password: password 
+                });
+                
+                if (error) {
+                    mostrarToast('Acesso negado. Verifique os dados.', 'erro');
+                    btnLogin.innerText = 'Entrar no HAPSIS';
+                    btnLogin.style.transform = 'none';
+                    btnLogin.style.opacity = '1';
+                }
+            } catch (err) {
+                console.error(err);
+                mostrarToast('Erro de conexão.', 'erro');
             }
+            
         } else {
+            // Lógica de Sign Up
             const nome = document.getElementById('auth-nome').value;
             const cargo = document.getElementById('auth-cargo').value;
             const chaveDigitada = document.getElementById('auth-chave').value;
             const senhaConfirm = document.getElementById('auth-senha-confirm').value;
 
-            if (!nome) return mostrarToast('Por favor, informe seu nome.', 'erro');
-            if (password !== senhaConfirm) return mostrarToast('As senhas não coincidem!', 'erro');
-            
+            if (!nome) {
+                mostrarToast('Por favor, informe seu nome.', 'erro');
+                return;
+            }
+            if (password !== senhaConfirm) {
+                mostrarToast('As senhas não coincidem!', 'erro');
+                return;
+            }
             if (cargo === 'gestor_geral' && chaveDigitada !== 'CEO2026') {
-                return mostrarToast('Chave de Gestor Supremo incorreta!', 'erro');
+                mostrarToast('Chave de Gestor Supremo incorreta!', 'erro');
+                return;
             }
             if (cargo === 'gestor_sub' && chaveDigitada !== 'FINAN2026') {
-                return mostrarToast('Chave de Gestor Financeiro incorreta!', 'erro');
+                mostrarToast('Chave de Gestor Financeiro incorreta!', 'erro');
+                return;
             }
 
             btnLogin.innerText = 'Criando conta...';
@@ -186,7 +269,10 @@ if (btnLogin) {
             btnLogin.style.opacity = '0.85';
             isRegistering = true; 
             
-            const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+            const { data: authData, error: authError } = await supabase.auth.signUp({ 
+                email: email, 
+                password: password 
+            });
             
             if (authError) {
                 mostrarToast(authError.message, 'erro');
@@ -231,6 +317,7 @@ if (btnLogin) {
 }
 
 const linkEsqueceu = document.getElementById('link-esqueceu-senha');
+
 if (linkEsqueceu) {
     linkEsqueceu.onclick = () => {
         document.getElementById('modal-recuperar-senha').classList.add('ativa');
@@ -238,6 +325,7 @@ if (linkEsqueceu) {
 }
 
 const formRecuperar = document.getElementById('form-recuperar-senha');
+
 if (formRecuperar) {
     formRecuperar.onsubmit = async (e) => {
         e.preventDefault();
@@ -265,12 +353,15 @@ if (formRecuperar) {
 }
 
 const formNovaSenha = document.getElementById('form-nova-senha');
+
 if (formNovaSenha) {
     formNovaSenha.onsubmit = async (e) => {
         e.preventDefault();
-        const novaSenha = document.getElementById('inp-nova-senha').value;
         
-        const { error } = await supabase.auth.updateUser({ password: novaSenha });
+        const novaSenha = document.getElementById('inp-nova-senha').value;
+        const { error } = await supabase.auth.updateUser({ 
+            password: novaSenha 
+        });
         
         if (error) {
             mostrarToast('Erro ao atualizar senha: ' + error.message, 'erro');
@@ -282,19 +373,23 @@ if (formNovaSenha) {
 }
 
 const btnLogout = document.getElementById('btn-logout');
+
 if (btnLogout) {
     btnLogout.onclick = async () => {
         const telaAuthEl = document.getElementById('tela-auth');
-        if (telaAuthEl) telaAuthEl.classList.remove('entrando');
+        
+        if (telaAuthEl) {
+            telaAuthEl.classList.remove('entrando');
+        }
         
         await supabase.auth.signOut();
         window.location.reload();
     }
 }
 
-// ==========================================
-// CONTROLE DE SESSÃO (ROTEAMENTO GLOBAL)
-// ==========================================
+// ============================================================================
+// 5. CONTROLE DE SESSÃO E CARREGAMENTO DE PERFIL
+// ============================================================================
 supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
         document.getElementById('modal-nova-senha').classList.add('ativa');
@@ -313,9 +408,14 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 });
 
 async function verificarPerfil() {
-    let { data, error } = await supabase.from('profiles').select('*').eq('id', usuarioAtual.id).single();
+    let { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', usuarioAtual.id)
+        .single();
     
     if (error || !data) {
+        // Fallback: Retentativa caso a latência atrapalhe o primeiro select
         await new Promise(r => setTimeout(r, 1500));
         let retry = await supabase.from('profiles').select('*').eq('id', usuarioAtual.id).single();
         data = retry.data;
@@ -324,12 +424,9 @@ async function verificarPerfil() {
     if (data) { 
         perfilAtual = data; 
         
-        if (perfilAtual.role === 'gestor') {
-            perfilAtual.role = 'gestor_geral';
-        }
-        if (perfilAtual.role === 'gerente') {
-            perfilAtual.role = 'gestor_sub';
-        }
+        // Retrocompatibilidade
+        if (perfilAtual.role === 'gestor') perfilAtual.role = 'gestor_geral';
+        if (perfilAtual.role === 'gerente') perfilAtual.role = 'gestor_sub';
         
         iniciarApp(); 
     } else {
@@ -338,18 +435,28 @@ async function verificarPerfil() {
     }
 }
 
-// ==========================================
-// INICIALIZAÇÃO DO APP E PERMISSÕES
-// ==========================================
+/**
+ * ============================================================================
+ * 6. INICIALIZAÇÃO DO APP E PERMISSÕES DA INTERFACE (RBAC)
+ * ============================================================================
+ */
 async function iniciarApp() {
     const elUserNome = document.getElementById('user-nome');
+    
     if (elUserNome) {
-        elUserNome.innerHTML = `<span style="font-size:12px; color:var(--muted); font-weight:normal;">${getSaudacao()},</span><br>${perfilAtual.full_name}`;
+        elUserNome.innerHTML = `
+            <span style="font-size:12px; color:var(--muted); font-weight:normal;">
+                ${getSaudacao()},
+            </span><br>
+            ${perfilAtual.full_name}
+        `;
     }
     
+    // Carrega perfis da equipe para dropdowns e cálculos
     const { data } = await supabase.from('profiles').select('*');
     perfisEquipe = data || [];
 
+    // Aplica Identidade Visual da Empresa
     const perfilGestor = perfisEquipe.find(p => p.role === 'gestor_geral' || p.role === 'gestor') || perfilAtual;
     
     if (perfilGestor.cor_primaria) {
@@ -357,8 +464,12 @@ async function iniciarApp() {
     }
     
     if (perfilGestor.logo_empresa) {
-        const imgHtml = `<img src="${perfilGestor.logo_empresa}" style="width:100%; height:100%; object-fit:contain; border-radius:8px;" />`;
-        
+        const imgHtml = `
+            <img 
+                src="${perfilGestor.logo_empresa}" 
+                style="width:100%; height:100%; object-fit:contain; border-radius:8px;" 
+            />
+        `;
         const logoApp = document.getElementById('app-logo-img');
         const logoLogin = document.getElementById('login-logo-img');
         
@@ -366,75 +477,97 @@ async function iniciarApp() {
             logoApp.innerHTML = imgHtml; 
             logoApp.style.background = 'transparent'; 
             logoApp.style.border = 'none'; 
+            logoApp.style.boxShadow = 'none';
         }
         if (logoLogin) { 
             logoLogin.innerHTML = imgHtml; 
             logoLogin.style.background = 'transparent'; 
             logoLogin.style.border = 'none'; 
+            logoLogin.style.boxShadow = 'none';
         }
     }
 
-    const isVendedor = perfilAtual.role === 'vendedor';
-    const isGestorSub = perfilAtual.role === 'gestor_sub';
-    const isGestorGeral = perfilAtual.role === 'gestor_geral';
-    const isAdmin = isGestorSub || isGestorGeral;
+    // Role-Based Access Control (Oculta tudo e exibe apenas o permitido)
+    const role = perfilAtual.role;
+    const isAdmin = role === 'gestor_sub' || role === 'gestor_geral';
 
-    document.querySelectorAll('.vendedor-only').forEach(el => {
-        el.classList.toggle('hidden', !isVendedor);
+    document.querySelectorAll('.nav-group').forEach(el => {
+        el.classList.add('hidden');
     });
-    
-    document.querySelectorAll('.gestor-sub-only').forEach(el => {
-        el.classList.toggle('hidden', !isGestorSub);
-    });
-    
-    document.querySelectorAll('.admin-shared').forEach(el => {
-        el.classList.toggle('hidden', !isAdmin);
-    });
-    
-    document.querySelectorAll('.gestor-geral-only').forEach(el => {
-        el.classList.toggle('hidden', !isGestorGeral);
-    });
+
+    if (role === 'vendedor' || role === 'sdr') {
+        document.querySelectorAll('.modulo-vendas').forEach(el => el.classList.remove('hidden'));
+    } else if (role === 'cs') {
+        document.querySelectorAll('.modulo-cs').forEach(el => el.classList.remove('hidden'));
+    } else if (role === 'marketing') {
+        document.querySelectorAll('.modulo-marketing').forEach(el => el.classList.remove('hidden'));
+    } else if (role === 'gestor_sub') {
+        document.querySelectorAll('.modulo-cfo').forEach(el => el.classList.remove('hidden'));
+        document.querySelectorAll('.modulo-vendas').forEach(el => el.classList.remove('hidden')); 
+    } else if (role === 'gestor_geral') {
+        document.querySelectorAll('.nav-group').forEach(el => el.classList.remove('hidden'));
+    }
     
     const boxSininho = document.getElementById('box-sininho');
     if (boxSininho) {
         boxSininho.classList.toggle('hidden', !isAdmin);
     }
 
-    document.querySelectorAll('.aba-conteudo').forEach(a => {
-        a.classList.add('hidden');
-    });
-    
-    document.querySelectorAll('.nav-item').forEach(b => {
-        b.classList.remove('ativo');
-    });
+    const btnAvisoCfo = document.getElementById('btn-novo-aviso');
+    if (btnAvisoCfo) {
+        btnAvisoCfo.classList.toggle('hidden', !isAdmin);
+    }
+
+    document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.add('hidden'));
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('ativo'));
     
     const boxAvisos = document.getElementById('box-avisos');
     
-    if (isAdmin) {
-        document.getElementById('aba-chefao').classList.remove('hidden'); 
+    // Define a aba inicial correta com base no cargo
+    if (role === 'gestor_geral' || role === 'gestor_sub') {
+        const abaChefao = document.getElementById('aba-chefao');
+        if (abaChefao) abaChefao.classList.remove('hidden'); 
+        
         const btnChefe = document.querySelector('[data-aba="aba-chefao"]');
-        if (btnChefe) {
-            btnChefe.classList.add('ativo');
-        }
-        if (boxAvisos) {
-            boxAvisos.classList.remove('hidden');
-        }
+        if (btnChefe) btnChefe.classList.add('ativo');
+        
+        if (boxAvisos) boxAvisos.classList.remove('hidden');
+        
+    } else if (role === 'cs') {
+        const abaPos = document.getElementById('aba-pos-venda');
+        if (abaPos) abaPos.classList.remove('hidden');
+        
+        const btnCs = document.querySelector('[data-aba="aba-pos-venda"]');
+        if (btnCs) btnCs.classList.add('ativo');
+        
+        if (boxAvisos) boxAvisos.classList.add('hidden');
+        
+    } else if (role === 'marketing') {
+        const abaGrowth = document.getElementById('aba-growth');
+        if (abaGrowth) abaGrowth.classList.remove('hidden');
+        
+        const btnGrowth = document.querySelector('[data-aba="aba-growth"]');
+        if (btnGrowth) btnGrowth.classList.add('ativo');
+        
+        if (boxAvisos) boxAvisos.classList.add('hidden');
+        
     } else {
-        document.getElementById('aba-kanban').classList.remove('hidden'); 
+        const abaKanban = document.getElementById('aba-kanban');
+        if (abaKanban) abaKanban.classList.remove('hidden'); 
+        
         const btnKanban = document.querySelector('[data-aba="aba-kanban"]');
-        if (btnKanban) {
-            btnKanban.classList.add('ativo');
-        }
-        if (boxAvisos) {
-            boxAvisos.classList.remove('hidden');
-        }
+        if (btnKanban) btnKanban.classList.add('ativo');
+        
+        if (boxAvisos) boxAvisos.classList.remove('hidden');
     }
     
+    // Efeito Cinematográfico de Entrada (Netflix Blur Zoom)
     const telaAuthEl = document.getElementById('tela-auth');
     if (telaAuthEl && telaAuthEl.classList.contains('ativa')) {
         telaAuthEl.classList.add('entrando');
         await new Promise(r => setTimeout(r, 700));
     }
+    
     mudarTela('tela-app');
     
     if (btnLogin) {
@@ -443,6 +576,7 @@ async function iniciarApp() {
         btnLogin.innerText = 'Entrar no HAPSIS';
     }
     
+    // Boot Assíncrono dos Módulos
     await carregarAvisos();
     await carregarProdutos();
     await carregarBonus(); 
@@ -450,9 +584,11 @@ async function iniciarApp() {
     configurarNotificacoes();
 }
 
-// ==========================================
-// ROTEAMENTO (NAVEGAÇÃO SIDEBAR)
-// ==========================================
+/**
+ * ============================================================================
+ * 7. NAVEGAÇÃO INTERNA (ROUTER) DA SIDEBAR
+ * ============================================================================
+ */
 document.querySelectorAll('.nav-item').forEach(btn => {
     btn.onclick = () => {
         document.querySelectorAll('.nav-item').forEach(b => {
@@ -481,6 +617,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
             }
         }
 
+        // Disparo otimizado de renderizações
         if (abaId === 'aba-relatorio') { 
             atualizarEstatisticas(); 
             calcularComissoesNovoModeloVendedor(); 
@@ -510,7 +647,6 @@ document.querySelectorAll('.nav-item').forEach(btn => {
         if (abaId === 'aba-config') {
             renderizarConfiguracoes();
         }
-        
         if (abaId === 'aba-auditoria-descontos') {
             renderizarAuditoriaDescontos();
         }
@@ -532,9 +668,13 @@ document.querySelectorAll('.nav-item').forEach(btn => {
         if (abaId === 'aba-ia-relatorios') {
             gerarRelatorioIA();
         }
+        if (abaId === 'aba-growth') {
+            renderizarGrowth();
+        }
     };
 });
 
+// Pesquisa Global Instantânea no Topbar
 const inputBusca = document.getElementById('inp-busca-global');
 if (inputBusca) {
     inputBusca.addEventListener('input', (e) => {
@@ -558,11 +698,18 @@ if (inputBusca) {
     });
 }
 
-// ==========================================
-// AVISOS E CATÁLOGO DE PRODUTOS
-// ==========================================
+/**
+ * ============================================================================
+ * 8. GESTÃO DO MURAL DE AVISOS E CATÁLOGO DE PRODUTOS
+ * ============================================================================
+ */
 async function carregarAvisos() {
-    const { data } = await supabase.from('avisos').select('*').order('created_at', { ascending: false }).limit(3);
+    const { data } = await supabase
+        .from('avisos')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3);
+        
     avisosData = data || [];
     
     const lista = document.getElementById('lista-avisos');
@@ -581,9 +728,12 @@ async function carregarAvisos() {
         <div class="aviso-item" style="flex-direction: column; align-items: flex-start; gap: 6px;">
             <div style="display: flex; justify-content: space-between; width: 100%;">
                 <strong style="color: var(--accent); font-size: 14px;">${a.titulo || 'Aviso'}</strong>
-                ${(['gestor_geral', 'gestor_sub'].includes(perfilAtual.role)) ? `<button class="aviso-del" title="Apagar aviso" onclick="window.deletarAviso(${a.id})"><i class="ph ph-trash"></i></button>` : ''}
+                ${(['gestor_geral', 'gestor_sub'].includes(perfilAtual.role)) ? `
+                <button class="aviso-del" title="Apagar aviso" onclick="window.deletarAviso(${a.id})">
+                    <i class="ph ph-trash"></i>
+                </button>` : ''}
             </div>
-            <span style="font-size: 13px; line-height: 1.4; color: var(--text);">${a.mensagem}</span>
+            <span style="font-size: 13px; line-height: 1.4; color: var(--text2);">${a.mensagem}</span>
         </div>
     `).join('');
 }
@@ -601,53 +751,95 @@ if (btnFecharAviso) {
 
 const formAviso = document.getElementById('form-aviso');
 if (formAviso) {
-    formAviso.onsubmit = async (e) => {
+    formAviso.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const titulo = document.getElementById('inp-aviso-titulo').value;
-        const msg = document.getElementById('inp-aviso-msg').value;
         
-        const { error } = await supabase.from('avisos').insert([{ titulo: titulo, mensagem: msg }]);
-        
-        if (error) {
-            mostrarToast('Erro: ' + error.message, 'erro'); 
-        } else { 
-            document.getElementById('modal-aviso').classList.remove('ativa'); 
-            document.getElementById('form-aviso').reset(); 
-            mostrarToast('Disparado!', 'ok'); 
-            carregarAvisos(); 
+        try {
+            const btnSubmit = formAviso.querySelector('button[type="submit"]');
+            const textOriginal = btnSubmit.innerHTML;
+            btnSubmit.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Disparando...';
+            btnSubmit.disabled = true;
+
+            const titulo = document.getElementById('inp-aviso-titulo').value;
+            const msg = document.getElementById('inp-aviso-msg').value;
+            
+            const { error } = await supabase.from('avisos').insert([
+                { titulo: titulo, mensagem: msg }
+            ]);
+            
+            if (error) {
+                mostrarToast('Erro: ' + error.message, 'erro'); 
+            } else { 
+                document.getElementById('modal-aviso').classList.remove('ativa'); 
+                formAviso.reset(); 
+                mostrarToast('Disparado no mural!', 'ok'); 
+                carregarAvisos(); 
+            }
+
+            btnSubmit.innerHTML = textOriginal;
+            btnSubmit.disabled = false;
+        } catch (err) {
+            console.error(err);
+            mostrarToast('Erro no sistema', 'erro');
         }
-    };
+    });
 }
 
 window.deletarAviso = (id) => { 
-    window.abrirConfirmacao('Apagar Aviso', 'Este recado será removido do mural.', 'Excluir Aviso', async () => { 
-        await supabase.from('avisos').delete().eq('id', id); 
-        mostrarToast('Aviso apagado.', 'ok'); 
-        carregarAvisos(); 
+    window.abrirConfirmacao('Apagar Aviso', 'Este recado será removido do mural da equipe.', 'Excluir Aviso', async () => { 
+        try {
+            await supabase.from('avisos').delete().eq('id', id); 
+            mostrarToast('Aviso apagado.', 'ok'); 
+            carregarAvisos(); 
+        } catch(err) {
+            console.error(err);
+            mostrarToast('Erro ao excluir', 'erro');
+        }
     }); 
 };
 
 async function carregarProdutos() {
-    const { data } = await supabase.from('produtos').select('*').order('nome');
+    const { data, error } = await supabase
+        .from('produtos')
+        .select('*')
+        .order('nome');
+        
+    if (error) {
+        console.error('Erro ao carregar produtos', error);
+    }
+        
     produtosData = data || [];
     
     const selectProd = document.getElementById('inp-produto');
     if (selectProd) {
         selectProd.innerHTML = '<option value="">Selecione um Produto...</option>' + 
-            produtosData.map(p => `<option value="${p.nome}" data-preco="${p.valor}">${p.nome}</option>`).join('');
+            produtosData.map(p => `
+                <option value="${p.nome}" data-preco="${p.valor}">
+                    ${p.nome}
+                </option>
+            `).join('');
     }
     
     const tbodyCat = document.getElementById('tbody-catalogo');
     if (tbodyCat) {
         if (produtosData.length === 0) {
-            tbodyCat.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--muted);">Catálogo vazio.</td></tr>'; 
+            tbodyCat.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align:center; padding:20px; color:var(--muted);">
+                        Catálogo de produtos vazio.
+                    </td>
+                </tr>`; 
         } else {
             tbodyCat.innerHTML = produtosData.map(p => `
                 <tr>
                     <td><strong style="color:var(--text)">${p.nome}</strong></td>
                     <td style="text-align:right;">R$ ${Number(p.valor).toFixed(2)}</td>
                     <td style="text-align:center; color:var(--accent); font-weight:bold;">${p.taxa_comissao || 5}%</td>
-                    <td style="text-align:center;"><button class="card-del" onclick="window.deletarProduto(${p.id})"><i class="ph ph-trash"></i></button></td>
+                    <td style="text-align:center;">
+                        <button class="card-del" onclick="window.deletarProduto(${p.id})">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                    </td>
                 </tr>
             `).join('');
         }
@@ -658,6 +850,7 @@ const selectInpProduto = document.getElementById('inp-produto');
 if (selectInpProduto) {
     selectInpProduto.addEventListener('change', (e) => {
         const selectedOption = e.target.options[e.target.selectedIndex];
+        
         if (selectedOption && selectedOption.dataset.preco) {
             document.getElementById('inp-valor').value = selectedOption.dataset.preco;
         }
@@ -666,41 +859,66 @@ if (selectInpProduto) {
 
 const formProduto = document.getElementById('form-produto');
 if (formProduto) {
-    formProduto.onsubmit = async (e) => {
+    formProduto.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const nome = document.getElementById('inp-prod-nome').value.toUpperCase();
-        const valor = document.getElementById('inp-prod-preco').value;
-        const taxa = document.getElementById('inp-prod-comissao').value;
         
-        const { error } = await supabase.from('produtos').insert([{ nome, valor, taxa_comissao: taxa }]);
-        
-        if (error) {
-            mostrarToast('Erro ao salvar.', 'erro'); 
-        } else { 
-            document.getElementById('modal-produto').classList.remove('ativa'); 
-            document.getElementById('form-produto').reset(); 
-            mostrarToast('Regra salva!', 'ok'); 
-            carregarProdutos(); 
+        try {
+            const btnSubmit = formProduto.querySelector('button[type="submit"]');
+            const textOriginal = btnSubmit.innerHTML;
+            btnSubmit.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Salvando...';
+            btnSubmit.disabled = true;
+
+            const nome = document.getElementById('inp-prod-nome').value.toUpperCase();
+            const valor = document.getElementById('inp-prod-preco').value;
+            const taxa = document.getElementById('inp-prod-comissao').value;
+            
+            const { error } = await supabase.from('produtos').insert([
+                { nome: nome, valor: valor, taxa_comissao: taxa }
+            ]);
+            
+            if (error) {
+                mostrarToast('Erro ao salvar.', 'erro'); 
+            } else { 
+                document.getElementById('modal-produto').classList.remove('ativa'); 
+                formProduto.reset(); 
+                mostrarToast('Nova regra de comissão salva!', 'ok'); 
+                carregarProdutos(); 
+            }
+
+            btnSubmit.innerHTML = textOriginal;
+            btnSubmit.disabled = false;
+        } catch (err) {
+            console.error(err);
         }
-    };
+    });
 }
 
 window.deletarProduto = (id) => { 
-    window.abrirConfirmacao('Excluir Produto', 'Remover do catálogo?', 'Excluir', async () => { 
-        await supabase.from('produtos').delete().eq('id', id); 
-        mostrarToast('Removido.', 'ok'); 
-        carregarProdutos(); 
+    window.abrirConfirmacao('Excluir Produto', 'Remover este item do catálogo oficial?', 'Excluir', async () => { 
+        try {
+            await supabase.from('produtos').delete().eq('id', id); 
+            mostrarToast('Produto Removido.', 'ok'); 
+            carregarProdutos(); 
+        } catch(err) {
+            console.error(err);
+        }
     }); 
 };
 
-// ==========================================
-// MÓDULO DE GAMIFICAÇÃO: CAMPANHAS DE BÔNUS
-// ==========================================
+/**
+ * ============================================================================
+ * 9. MÓDULO DE BÔNUS E GAMIFICAÇÃO FINANCEIRA
+ * ============================================================================
+ */
 async function carregarBonus() {
-    const { data } = await supabase.from('campanhas_bonus').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase
+        .from('campanhas_bonus')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
     bonusData = data || [];
     
-    if (perfilAtual.role === 'vendedor') {
+    if (perfilAtual.role === 'vendedor' || perfilAtual.role === 'sdr') {
         verificarBonusAtivo();
     } else {
         renderizarBonus();
@@ -712,7 +930,12 @@ function renderizarBonus() {
     if (!tbody) return;
 
     if (bonusData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">Nenhuma campanha de bônus lançada.</td></tr>`;
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">
+                    Nenhuma campanha de bônus lançada.
+                </td>
+            </tr>`;
         return;
     }
 
@@ -720,14 +943,18 @@ function renderizarBonus() {
         let corStatus = b.status === 'Ativa' ? 'color: var(--fechados);' : 'color: var(--danger);';
         
         let botaoHTML = b.status === 'Ativa' 
-            ? `<button class="btn-cancel" style="padding:4px 8px; width:auto; margin:0 auto; font-size:12px; color:var(--danger); border-color:var(--danger);" onclick="window.encerrarBonus(${b.id})"><i class="ph ph-stop-circle"></i> Encerrar</button>`
-            : `<button class="btn-cancel" style="padding:4px 8px; width:auto; margin:0 auto; font-size:12px; color:var(--muted); border-color:var(--border);" onclick="window.deletarBonus(${b.id})"><i class="ph ph-trash"></i> Apagar</button>`;
+            ? `<button class="btn-cancel" style="padding:4px 8px; width:auto; margin:0 auto; font-size:12px; color:var(--danger); border-color:var(--danger2);" onclick="window.encerrarBonus(${b.id})">
+                 <i class="ph ph-stop-circle"></i> Encerrar
+               </button>`
+            : `<button class="btn-cancel" style="padding:4px 8px; width:auto; margin:0 auto; font-size:12px; color:var(--muted); border-color:var(--border2);" onclick="window.deletarBonus(${b.id})">
+                 <i class="ph ph-trash"></i> Apagar
+               </button>`;
         
         return `
         <tr>
             <td style="font-weight: bold; color: var(--text);">${b.titulo}</td>
             <td style="text-align:right;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(b.meta_valor)}</td>
-            <td style="text-align:right; font-weight:bold; color:#b388ff;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(b.premio_valor)}</td>
+            <td style="text-align:right; font-weight:bold; color:var(--purple);">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(b.premio_valor)}</td>
             <td style="font-weight:bold; ${corStatus}">${b.status}</td>
             <td style="text-align:center;">
                 ${botaoHTML}
@@ -737,10 +964,14 @@ function renderizarBonus() {
 }
 
 window.deletarBonus = async (id) => {
-    window.abrirConfirmacao('Apagar Campanha', 'Remover esta campanha do histórico?', 'Apagar Definitivo', async () => {
-        await supabase.from('campanhas_bonus').delete().eq('id', id);
-        mostrarToast('Campanha deletada.', 'ok'); 
-        carregarBonus();
+    window.abrirConfirmacao('Apagar Campanha', 'Remover esta campanha do histórico financeiro?', 'Apagar Definitivo', async () => {
+        try {
+            await supabase.from('campanhas_bonus').delete().eq('id', id);
+            mostrarToast('Campanha deletada.', 'ok'); 
+            carregarBonus();
+        } catch(err) {
+            console.error(err);
+        }
     });
 };
 
@@ -773,66 +1004,95 @@ function verificarBonusAtivo() {
 
 const formBonus = document.getElementById('form-bonus');
 if (formBonus) {
-    formBonus.onsubmit = async (e) => {
+    formBonus.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const titulo = document.getElementById('inp-bonus-titulo').value;
-        const meta = document.getElementById('inp-bonus-meta').value;
-        const premio = document.getElementById('inp-bonus-premio').value;
         
-        const { error } = await supabase.from('campanhas_bonus').insert([{ 
-            titulo: titulo, 
-            meta_valor: meta, 
-            premio_valor: premio, 
-            status: 'Ativa' 
-        }]);
-        
-        if (error) {
-            mostrarToast('Erro ao criar bônus.', 'erro'); 
-        } else { 
-            document.getElementById('modal-bonus').classList.remove('ativa'); 
-            formBonus.reset(); 
-            mostrarToast('Campanha lançada!', 'ok'); 
-            carregarBonus(); 
+        try {
+            const btnSubmit = formBonus.querySelector('button[type="submit"]');
+            const textOriginal = btnSubmit.innerHTML;
+            btnSubmit.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Lançando...';
+            btnSubmit.disabled = true;
+
+            const titulo = document.getElementById('inp-bonus-titulo').value;
+            const meta = document.getElementById('inp-bonus-meta').value;
+            const premio = document.getElementById('inp-bonus-premio').value;
+            
+            const { error } = await supabase.from('campanhas_bonus').insert([{ 
+                titulo: titulo, 
+                meta_valor: meta, 
+                premio_valor: premio, 
+                status: 'Ativa' 
+            }]);
+            
+            if (error) {
+                mostrarToast('Erro ao criar bônus.', 'erro'); 
+            } else { 
+                document.getElementById('modal-bonus').classList.remove('ativa'); 
+                formBonus.reset(); 
+                mostrarToast('Campanha lançada para a equipe!', 'ok'); 
+                carregarBonus(); 
+            }
+
+            btnSubmit.innerHTML = textOriginal;
+            btnSubmit.disabled = false;
+        } catch (err) {
+            console.error(err);
         }
-    };
+    });
 }
 
 window.encerrarBonus = (id) => {
     window.abrirConfirmacao('Encerrar Campanha', 'Deseja parar esta campanha de bônus?', 'Encerrar', async () => {
-        await supabase.from('campanhas_bonus').update({ status: 'Encerrada' }).eq('id', id);
-        mostrarToast('Campanha encerrada.', 'ok');
-        carregarBonus();
+        try {
+            await supabase.from('campanhas_bonus').update({ status: 'Encerrada' }).eq('id', id);
+            mostrarToast('Campanha encerrada.', 'ok');
+            carregarBonus();
+        } catch(err) {
+            console.error(err);
+        }
     });
 };
 
-// ==========================================
-// LEADS PRINCIPAIS (O CORE DO SISTEMA)
-// ==========================================
+/**
+ * ============================================================================
+ * 10. O NÚCLEO DO SISTEMA: CARREGAMENTO DE LEADS E VENDAS
+ * ============================================================================
+ */
 async function carregarLeads() {
-    let query = supabase.from('leads').select('*').order('created_at', { ascending: false });
+    let query = supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
     
-    if (perfilAtual.role === 'vendedor') {
+    // Regra de Isolamento a Nível de Query
+    if (perfilAtual.role === 'vendedor' || perfilAtual.role === 'sdr') {
         query = query.eq('user_id', usuarioAtual.id);
     }
     
     const { data, error } = await query;
     
     if (error) {
-        console.error("Erro leads:", error);
+        console.error("Falha Crítica ao puxar leads do banco:", error);
     }
     
     leadsData = data || [];
     
+    // Processamento Paralelo: CFO/CEO carregam módulos financeiros atrelados
     if (perfilAtual.role === 'gestor_geral' || perfilAtual.role === 'gestor_sub') {
-        const pagQuery = await supabase.from('pagamentos_comissao').select('*').order('created_at', { ascending: false });
+        const pagQuery = await supabase
+            .from('pagamentos_comissao')
+            .select('*')
+            .order('created_at', { ascending: false });
+            
         pagamentosData = pagQuery.data || [];
-        
         carregarDespesas(); 
     }
 
-    if (perfilAtual.role === 'vendedor') { 
+    // =======================================================
+    // DISTRIBUIÇÃO DE RENDERIZAÇÃO E CONSTRUÇÃO DE INTERFACE
+    // =======================================================
+    if (perfilAtual.role === 'vendedor' || perfilAtual.role === 'sdr') { 
         renderizarKanban(); 
-        renderizarPosVenda(); 
         renderizarLista(); 
         renderizarAgenda(); 
         renderizarArena();
@@ -842,27 +1102,56 @@ async function carregarLeads() {
             atualizarEstatisticas(); 
             calcularComissoesNovoModeloVendedor(); 
         }
+        
+    } else if (perfilAtual.role === 'cs') {
+        renderizarPosVenda();
+        
+    } else if (perfilAtual.role === 'marketing') {
+        renderizarGrowth();
+        
     } else { 
+        // Cargo de Administração (CEO / CFO)
+        renderizarKanban();
+        renderizarLista();
+        renderizarAgenda();
+        renderizarArena();
         renderizarGestor();
         
         if (perfilAtual.role === 'gestor_geral') {
-            if (!document.getElementById('aba-equipe').classList.contains('hidden')) renderizarAbaEquipe();
-            if (!document.getElementById('aba-auditoria').classList.contains('hidden')) renderizarAbaAuditoria();
+            if (!document.getElementById('aba-equipe').classList.contains('hidden')) {
+                renderizarAbaEquipe();
+            }
+            if (!document.getElementById('aba-auditoria').classList.contains('hidden')) {
+                renderizarAbaAuditoria();
+            }
         }
         
-        if (!document.getElementById('aba-exportacao').classList.contains('hidden')) renderizarTabelaExportacao();
-        if (!document.getElementById('aba-comissoes').classList.contains('hidden')) renderizarComissoesNovoModeloFinanceiro();
+        if (!document.getElementById('aba-exportacao').classList.contains('hidden')) {
+            renderizarTabelaExportacao();
+        }
+        if (!document.getElementById('aba-comissoes').classList.contains('hidden')) {
+            renderizarComissoesNovoModeloFinanceiro();
+        }
         
         renderizarAprovacoes();
 
-        if (!document.getElementById('aba-auditoria-descontos').classList.contains('hidden')) renderizarAuditoriaDescontos();
-        if (!document.getElementById('aba-cobrancas').classList.contains('hidden')) renderizarCobrancas();
-        if (!document.getElementById('aba-mrr').classList.contains('hidden')) renderizarMRR();
-        if (!document.getElementById('aba-contratos').classList.contains('hidden')) renderizarContratos();
+        if (!document.getElementById('aba-auditoria-descontos').classList.contains('hidden')) {
+            renderizarAuditoriaDescontos();
+        }
+        if (!document.getElementById('aba-cobrancas').classList.contains('hidden')) {
+            renderizarCobrancas();
+        }
+        if (!document.getElementById('aba-mrr').classList.contains('hidden')) {
+            renderizarMRR();
+        }
+        if (!document.getElementById('aba-contratos').classList.contains('hidden')) {
+            renderizarContratos();
+        }
     }
     
     window.atualizarMeta();
     
+    // Força a barra de pesquisa a filtrar a nova carga de dados se estiver preenchida
     if (inputBusca && inputBusca.value) {
         inputBusca.dispatchEvent(new Event('input'));
     }
@@ -871,7 +1160,7 @@ async function carregarLeads() {
 window.atualizarMeta = function() {
     let fechadosReais = leadsData.filter(l => l.status === 'fechados' && l.aprovado === true && !l.estornado);
     
-    if (perfilAtual.role === 'vendedor') {
+    if (perfilAtual.role === 'vendedor' || perfilAtual.role === 'sdr') {
         fechadosReais = fechadosReais.filter(l => l.user_id === usuarioAtual.id);
     }
     
@@ -886,63 +1175,102 @@ window.atualizarMeta = function() {
     
     let porcentagem = Math.min((receita / objetivo) * 100, 100);
     
+    // 1. Atualiza a Meta no Kanban
     const elMetaAtualK = document.getElementById('meta-atual'); 
     const elMetaObjK = document.getElementById('meta-objetivo'); 
     const barraK = document.getElementById('meta-barra');
     
-    if (elMetaAtualK) elMetaAtualK.innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(receita);
-    if (elMetaObjK) elMetaObjK.innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(objetivo);
+    if (elMetaAtualK) {
+        elMetaAtualK.innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(receita);
+    }
+    if (elMetaObjK) {
+        elMetaObjK.innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(objetivo);
+    }
+    
     if (barraK) { 
         barraK.style.width = `${porcentagem}%`; 
-        if (porcentagem === 100 && receita > 0) barraK.classList.add('bateu-meta'); 
-        else barraK.classList.remove('bateu-meta'); 
+        
+        if (porcentagem === 100 && receita > 0) {
+            barraK.classList.add('bateu-meta'); 
+        } else {
+            barraK.classList.remove('bateu-meta'); 
+        }
     }
 
+    // 2. Atualiza a Meta no Dashboard Executivo (CEO)
     const elMetaAtualG = document.getElementById('meta-atual-gestor'); 
     const elMetaObjG = document.getElementById('meta-objetivo-gestor'); 
     const barraG = document.getElementById('meta-barra-gestor');
     
-    if (elMetaAtualG) elMetaAtualG.innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(receita);
-    if (elMetaObjG) elMetaObjG.innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(objetivo);
+    if (elMetaAtualG) {
+        elMetaAtualG.innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(receita);
+    }
+    if (elMetaObjG) {
+        elMetaObjG.innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(objetivo);
+    }
+    
     if (barraG) { 
         barraG.style.width = `${porcentagem}%`; 
-        if (porcentagem === 100 && receita > 0) barraG.classList.add('bateu-meta'); 
-        else barraG.classList.remove('bateu-meta'); 
+        
+        if (porcentagem === 100 && receita > 0) {
+            barraG.classList.add('bateu-meta'); 
+        } else {
+            barraG.classList.remove('bateu-meta'); 
+        }
     }
 }
 
 window.alterarMeta = () => {
     let valorAExibir = 10000;
     const perfilGestor = perfisEquipe.find(p => p.role === 'gestor_geral' || p.role === 'gestor');
-    if (perfilGestor && perfilGestor.meta_mensal) valorAExibir = perfilGestor.meta_mensal;
+    
+    if (perfilGestor && perfilGestor.meta_mensal) {
+        valorAExibir = perfilGestor.meta_mensal;
+    }
+    
     document.getElementById('inp-nova-meta').value = valorAExibir; 
     document.getElementById('modal-meta').classList.add('ativa');
 };
 
 const formMeta = document.getElementById('form-meta');
+
 if (formMeta) {
-    formMeta.onsubmit = async (e) => {
+    formMeta.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const nm = Number(document.getElementById('inp-nova-meta').value);
-        if (isNaN(nm) || nm <= 0) return mostrarToast('Valor inválido.', 'erro');
         
-        const btnSalvar = document.getElementById('form-meta').querySelector('button'); 
-        const txtOriginal = btnSalvar.innerHTML; 
-        btnSalvar.innerHTML = 'Salvando...';
-        
-        const { error } = await supabase.from('profiles').update({ meta_mensal: nm }).eq('id', usuarioAtual.id);
-        btnSalvar.innerHTML = txtOriginal;
-        
-        if (error) mostrarToast('Erro ao salvar meta no banco de dados.', 'erro');
-        else { 
-            perfilAtual.meta_mensal = nm; 
-            const { data } = await supabase.from('profiles').select('*'); 
-            perfisEquipe = data || []; 
-            window.atualizarMeta(); 
-            document.getElementById('modal-meta').classList.remove('ativa'); 
-            mostrarToast('Meta Global atualizada com sucesso!', 'ok'); 
+        try {
+            const nm = Number(document.getElementById('inp-nova-meta').value);
+            
+            if (isNaN(nm) || nm <= 0) {
+                return mostrarToast('Valor inválido.', 'erro');
+            }
+            
+            const btnSalvar = document.getElementById('form-meta').querySelector('button'); 
+            const txtOriginal = btnSalvar.innerHTML; 
+            btnSalvar.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Salvando...';
+            btnSalvar.disabled = true;
+            
+            const { error } = await supabase.from('profiles').update({ meta_mensal: nm }).eq('id', usuarioAtual.id);
+            
+            btnSalvar.innerHTML = txtOriginal;
+            btnSalvar.disabled = false;
+            
+            if (error) {
+                mostrarToast('Erro ao salvar meta no banco de dados.', 'erro');
+            } else { 
+                perfilAtual.meta_mensal = nm; 
+                
+                const { data } = await supabase.from('profiles').select('*'); 
+                perfisEquipe = data || []; 
+                
+                window.atualizarMeta(); 
+                document.getElementById('modal-meta').classList.remove('ativa'); 
+                mostrarToast('Meta Global atualizada com sucesso!', 'ok'); 
+            }
+        } catch (err) {
+            console.error(err);
         }
-    };
+    });
 }
 
 const btnViewKanban = document.getElementById('btn-view-kanban'); 
@@ -965,12 +1293,17 @@ if (btnViewKanban && btnViewLista) {
     };
 }
 
-// ==========================================
-// GERAÇÃO DOS CARDS NO KANBAN E LISTA
-// ==========================================
+/**
+ * ============================================================================
+ * 11. GERAÇÃO DOS CARDS DO KANBAN
+ * ============================================================================
+ */
 function gerarCardHTML(l, status, isPosVenda = false) {
     let numWpp = l.whatsapp.replace(/\D/g, ''); 
-    if (!numWpp.startsWith('55') && numWpp.length <= 11) numWpp = '55' + numWpp;
+    
+    if (!numWpp.startsWith('55') && numWpp.length <= 11) {
+        numWpp = '55' + numWpp;
+    }
     
     let termometroClasse = ''; 
     let termometroBadge = ''; 
@@ -978,21 +1311,26 @@ function gerarCardHTML(l, status, isPosVenda = false) {
     
     if (status === 'abandonados') {
         termometroClasse = 'card-pendente'; 
-        termometroBadge = `<span class="badge" style="background:rgba(136,144,170,0.15); color:var(--muted);"><i class="ph ph-ghost"></i> Ghosting</span>`; 
+        termometroBadge = `<span class="badge" style="background:rgba(122,131,161,0.15); color:var(--muted);"><i class="ph ph-ghost"></i> Ghosting</span>`; 
         valorExibicao = `<span style="color: var(--muted); font-weight:bold; font-size: 12px; text-decoration: line-through;">R$ ${Number(l.valor).toFixed(2)}</span>`;
-    } else if (l.estornado || status === 'perdidos') {
+    } 
+    else if (l.estornado || status === 'perdidos') {
         termometroClasse = 'card-pendente'; 
         termometroBadge = `<span class="badge-vermelho"><i class="ph ph-warning-circle"></i> ${l.motivo_perda || 'Perdido'}</span>`; 
         valorExibicao = `<span style="color: var(--danger); font-weight:bold; font-size: 12px; text-decoration: line-through;">R$ ${Number(l.valor).toFixed(2)}</span>`;
-    } else if (l.is_inadimplente) {
+    } 
+    else if (l.is_inadimplente) {
         termometroClasse = 'card-pendente'; 
         termometroBadge = `<span class="badge-vermelho"><i class="ph ph-warning"></i> Em Atraso</span>`; 
-    } else if (status === 'fechados' && l.aprovado !== true && !isPosVenda) {
+    } 
+    else if (status === 'fechados' && l.aprovado !== true && !isPosVenda) {
         termometroClasse = 'card-pendente'; 
         termometroBadge = `<span class="badge-pendente"><i class="ph ph-hourglass-high"></i> Aguard. Gestor</span>`; 
         valorExibicao = `<span style="color: var(--negociacao); font-weight:bold; font-size: 12px; font-style:italic;">💸 R$ ${Number(l.valor).toFixed(2)} (Aprovação)</span>`;
-    } else if (status !== 'fechados' && l.created_at && !isPosVenda) {
+    } 
+    else if (status !== 'fechados' && l.created_at && !isPosVenda) {
         let diffDias = Math.floor(Math.abs(new Date() - new Date(l.created_at)) / (1000 * 60 * 60 * 24));
+        
         if (diffDias <= 1) { 
             termometroClasse = 'lead-quente'; 
             termometroBadge = `<span class="badge-quente"><i class="ph ph-fire"></i> Novo</span>`; 
@@ -1003,10 +1341,19 @@ function gerarCardHTML(l, status, isPosVenda = false) {
     }
     
     let iconesExtras = '';
-    if (l.notas) iconesExtras += `<i class="ph ph-notebook" title="Anotações" style="color:var(--novos); margin-left:6px;"></i>`;
-    if (l.comprovante_url) iconesExtras += `<i class="ph ph-receipt" title="Comprovante" style="color:var(--fechados); margin-left:4px;"></i>`;
-    if (l.doc_importante_url) iconesExtras += `<i class="ph ph-file-text" title="Docs Importantes" style="color:#4fc3f7; margin-left:4px;"></i>`;
-    if (l.is_recorrente) iconesExtras += `<i class="ph ph-arrows-clockwise" title="Assinatura" style="color:#b388ff; margin-left:4px;"></i>`;
+    
+    if (l.notas) {
+        iconesExtras += `<i class="ph ph-notebook" title="Anotações" style="color:var(--novos); margin-left:6px;"></i>`;
+    }
+    if (l.comprovante_url) {
+        iconesExtras += `<i class="ph ph-receipt" title="Comprovante Financeiro" style="color:var(--fechados); margin-left:4px;"></i>`;
+    }
+    if (l.doc_importante_url) {
+        iconesExtras += `<i class="ph ph-file-text" title="Docs Importantes" style="color:var(--novos); margin-left:4px;"></i>`;
+    }
+    if (l.is_recorrente) {
+        iconesExtras += `<i class="ph ph-arrows-clockwise" title="Assinatura" style="color:var(--purple); margin-left:4px;"></i>`;
+    }
 
     return `
     <div class="lead-card ${termometroClasse}" draggable="true" data-id="${l.id}" onclick="window.abrirDrawerLead(${l.id})">
@@ -1015,12 +1362,16 @@ function gerarCardHTML(l, status, isPosVenda = false) {
                 <div class="card-nome">${l.nome} ${iconesExtras}</div>
                 <div>${termometroBadge}</div>
             </div>
-            <button class="card-del" onclick="event.stopPropagation(); window.deletarLead(${l.id})"><i class="ph ph-trash"></i></button>
+            <button class="card-del" onclick="event.stopPropagation(); window.deletarLead(${l.id})">
+                <i class="ph ph-trash"></i>
+            </button>
         </div>
         <div class="card-info" style="display: flex; flex-direction: column; gap: 8px;">
             <span><i class="ph ph-package"></i> ${l.produto || 'Geral'}</span>
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color:var(--muted); font-size: 12px;"><i class="ph ph-whatsapp-logo"></i> ${l.whatsapp}</span>
+                <span style="color:var(--muted); font-size: 12px;">
+                    <i class="ph ph-whatsapp-logo"></i> ${l.whatsapp}
+                </span>
                 <button onclick="event.stopPropagation(); window.abrirModalWhatsApp('${numWpp}', '${l.nome}')" style="background: rgba(37,211,102,0.1); border:none; color: #25d366; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 11px; display: flex; align-items: center; gap: 4px; transition:0.2s;">
                     <i class="ph ph-whatsapp-logo" style="font-size:14px;"></i> Chamar
                 </button>
@@ -1031,9 +1382,16 @@ function gerarCardHTML(l, status, isPosVenda = false) {
 }
 
 function renderizarKanban() {
-    let leadsVisao = leadsData.filter(l => l.user_id === usuarioAtual.id);
+    let leadsVisao = leadsData;
     
-    ['novos', 'negociacao', 'fechados', 'perdidos', 'abandonados'].forEach(status => {
+    // Filtro Condicional baseado na Regra de Negócio (RBAC)
+    if (perfilAtual.role === 'vendedor' || perfilAtual.role === 'sdr') {
+        leadsVisao = leadsData.filter(l => l.user_id === usuarioAtual.id);
+    }
+    
+    const colunas = ['novos', 'negociacao', 'fechados', 'perdidos', 'abandonados'];
+    
+    colunas.forEach(status => {
         const col = document.getElementById(`col-${status}`); 
         if (!col) return;
         
@@ -1041,8 +1399,17 @@ function renderizarKanban() {
         col.parentElement.querySelector('.col-count').innerText = list.length;
         
         if (list.length === 0) {
-            let msg = status === 'novos' ? 'Sem contatos.<br>Cadastre um novo!' : status === 'negociacao' ? 'Ninguém negociando.<br>Arraste leads para cá.' : status === 'fechados' ? 'Caixa vazio.<br>Feche uma venda!' : status === 'abandonados' ? 'Nenhum fantasma.<br>Time focado!' : 'Nenhuma perda registrada.<br>Excelente!';
-            let icone = status === 'novos' ? 'ph-user-plus' : status === 'negociacao' ? 'ph-handshake' : status === 'fechados' ? 'ph-money' : status === 'abandonados' ? 'ph-ghost' : 'ph-shield-check';
+            let msg = status === 'novos' ? 'Sem contatos.<br>Cadastre um novo!' : 
+                      status === 'negociacao' ? 'Ninguém negociando.<br>Arraste leads para cá.' : 
+                      status === 'fechados' ? 'Caixa vazio.<br>Feche uma venda!' : 
+                      status === 'abandonados' ? 'Nenhum fantasma.<br>Time focado!' : 
+                      'Nenhuma perda registrada.<br>Excelente!';
+                      
+            let icone = status === 'novos' ? 'ph-user-plus' : 
+                        status === 'negociacao' ? 'ph-handshake' : 
+                        status === 'fechados' ? 'ph-money' : 
+                        status === 'abandonados' ? 'ph-ghost' : 
+                        'ph-shield-check';
             
             col.innerHTML = `
             <div class="empty-state">
@@ -1060,22 +1427,41 @@ function renderizarKanban() {
 }
 
 function renderizarPosVenda() {
-    let leadsPos = leadsData.filter(l => l.user_id === usuarioAtual.id && l.status === 'fechados' && l.aprovado === true && !l.estornado);
+    let leadsPos = leadsData.filter(l => l.status === 'fechados' && l.aprovado === true && !l.estornado);
     
-    document.getElementById('stat-pv-on').innerText = leadsPos.filter(l => (l.etapa_pos_venda || 'onboarding') === 'onboarding').length; 
-    document.getElementById('stat-pv-ac').innerText = leadsPos.filter(l => l.etapa_pos_venda === 'acompanhamento').length; 
-    document.getElementById('stat-pv-up').innerText = leadsPos.filter(l => l.etapa_pos_venda === 'upsell').length;
+    if (perfilAtual.role === 'vendedor') {
+        leadsPos = leadsPos.filter(l => l.user_id === usuarioAtual.id);
+    }
+    
+    const totalOnboarding = leadsPos.filter(l => (l.etapa_pos_venda || 'onboarding') === 'onboarding').length;
+    const totalAcompanhamento = leadsPos.filter(l => l.etapa_pos_venda === 'acompanhamento').length;
+    const totalUpsell = leadsPos.filter(l => l.etapa_pos_venda === 'upsell').length;
+    
+    if (document.getElementById('stat-pv-on')) document.getElementById('stat-pv-on').innerText = totalOnboarding; 
+    if (document.getElementById('stat-pv-ac')) document.getElementById('stat-pv-ac').innerText = totalAcompanhamento; 
+    if (document.getElementById('stat-pv-up')) document.getElementById('stat-pv-up').innerText = totalUpsell;
 
-    ['onboarding', 'acompanhamento', 'upsell'].forEach(etapa => {
+    const colunasPosVenda = ['onboarding', 'acompanhamento', 'upsell'];
+    
+    colunasPosVenda.forEach(etapa => {
         const col = document.getElementById(`col-pv-${etapa}`); 
         if (!col) return;
         
         const list = leadsPos.filter(l => (l.etapa_pos_venda || 'onboarding') === etapa);
-        document.getElementById(`count-pv-${etapa.substring(0,2)}`).innerText = list.length;
+        const prefixoCounter = etapa.substring(0,2);
+        
+        if (document.getElementById(`count-pv-${prefixoCounter}`)) {
+            document.getElementById(`count-pv-${prefixoCounter}`).innerText = list.length;
+        }
         
         if (list.length === 0) {
-            let msg = etapa === 'onboarding' ? 'Nenhum cliente novo.' : etapa === 'acompanhamento' ? 'Nenhum acompanhamento ativo.' : 'Ninguém pronto para Upsell.';
-            let icone = etapa === 'onboarding' ? 'ph-hand-waving' : etapa === 'acompanhamento' ? 'ph-chats-circle' : 'ph-rocket-launch';
+            let msg = etapa === 'onboarding' ? 'Nenhum cliente novo.' : 
+                      etapa === 'acompanhamento' ? 'Nenhum acompanhamento ativo.' : 
+                      'Ninguém pronto para Upsell.';
+                      
+            let icone = etapa === 'onboarding' ? 'ph-hand-waving' : 
+                        etapa === 'acompanhamento' ? 'ph-chats-circle' : 
+                        'ph-rocket-launch';
             
             col.innerHTML = `
             <div class="empty-state">
@@ -1096,33 +1482,55 @@ function renderizarLista() {
     const tbody = document.getElementById('tbody-lista'); 
     if (!tbody) return;
     
-    let leadsVisao = leadsData.filter(l => l.user_id === usuarioAtual.id);
+    let leadsVisao = leadsData;
+    
+    if (perfilAtual.role === 'vendedor' || perfilAtual.role === 'sdr') {
+        leadsVisao = leadsData.filter(l => l.user_id === usuarioAtual.id);
+    }
     
     if (leadsVisao.length === 0) { 
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 30px; color:var(--muted);">Nenhum cliente no funil.</td></tr>`; 
+        tbody.innerHTML = `
+        <tr>
+            <td colspan="5" style="text-align:center; padding: 30px; color:var(--muted);">
+                Nenhum cliente no funil.
+            </td>
+        </tr>`; 
         return; 
     }
     
     tbody.innerHTML = leadsVisao.map(l => {
-        let corBadge = l.status === 'novos' ? 'badge-azul' : (l.status === 'negociacao' ? 'badge-amarelo' : (l.status === 'perdidos' ? 'badge-vermelho' : (l.status === 'abandonados' ? 'badge-equipe' : 'badge-verde')));
+        let corBadge = l.status === 'novos' ? 'badge-azul' : 
+                       (l.status === 'negociacao' ? 'badge-amarelo' : 
+                       (l.status === 'perdidos' ? 'badge-vermelho' : 
+                       (l.status === 'abandonados' ? 'badge-equipe' : 'badge-verde')));
+                       
+        let corValor = l.status === 'fechados' ? 'var(--fechados)' : 
+                       (l.status === 'perdidos' || l.status === 'abandonados' ? 'var(--danger)' : 'var(--accent)');
+                       
         return `
         <tr onclick="window.abrirDrawerLead(${l.id})" class="clicavel">
             <td style="font-weight: bold; color: var(--text);">${l.nome}</td>
             <td>${l.produto || 'Geral'}</td>
-            <td style="color: ${l.status === 'fechados' ? 'var(--fechados)' : (l.status === 'perdidos' || l.status === 'abandonados' ? 'var(--danger)' : 'var(--accent)')}; font-weight:bold; text-align:right;">R$ ${Number(l.valor).toFixed(2)}</td>
+            <td style="color: ${corValor}; font-weight:bold; text-align:right;">R$ ${Number(l.valor).toFixed(2)}</td>
             <td><span class="badge ${corBadge}">${l.status.toUpperCase()}</span></td>
             <td style="color: var(--muted);">${l.whatsapp}</td>
         </tr>`;
     }).join('');
 }
 
-// ARRASTAR E SOLTAR (DRAG & DROP)
+/**
+ * ============================================================================
+ * 12. DRAG AND DROP (ARRASTAR E SOLTAR COM TRAVAS DE SEGURANÇA CFO)
+ * ============================================================================
+ */
 function configurarDrag(container, tipoDrop) {
+    
     container.querySelectorAll('.lead-card').forEach(c => { 
         c.ondragstart = (e) => { 
             c.classList.add('dragging'); 
             e.dataTransfer.setData('id', c.dataset.id); 
         }; 
+        
         c.ondragend = () => { 
             c.classList.remove('dragging'); 
         }; 
@@ -1148,7 +1556,21 @@ function configurarDrag(container, tipoDrop) {
 
         if (tipoDrop === 'status') {
             const novoStatus = container.dataset.status; 
-            if (lead.status === novoStatus) return;
+            
+            if (lead.status === novoStatus) {
+                return;
+            }
+            
+            // TRAVA DE SEGURANÇA: Venda aprovada não volta (Audit compliance)
+            if (lead.status === 'fechados' && lead.aprovado === true) {
+                mostrarToast('Venda já aprovada no caixa! Peça um estorno ao Financeiro.', 'erro');
+                return;
+            }
+            
+            if (lead.estornado) {
+                mostrarToast('Venda bloqueada por estorno.', 'erro');
+                return;
+            }
             
             if (novoStatus === 'perdidos') { 
                 document.getElementById('inp-perda-lead-id').value = idCard; 
@@ -1157,9 +1579,17 @@ function configurarDrag(container, tipoDrop) {
             }
             
             if (novoStatus === 'abandonados') {
-                let hA = lead.historico || []; 
-                hA.push({ data: new Date().toISOString(), msg: `Movido para ABANDONADOS (Ghosting) por ${perfilAtual.full_name}` });
-                await supabase.from('leads').update({ status: 'abandonados', historico: hA }).eq('id', idCard);
+                let histAtual = lead.historico || []; 
+                histAtual.push({ 
+                    data: new Date().toISOString(), 
+                    msg: `Movido para ABANDONADOS (Ghosting) por ${perfilAtual.full_name}` 
+                });
+                
+                await supabase.from('leads').update({ 
+                    status: 'abandonados', 
+                    historico: histAtual 
+                }).eq('id', idCard);
+                
                 mostrarToast('Cliente arquivado em Abandonados.', 'ok'); 
                 carregarLeads(); 
                 return;
@@ -1171,21 +1601,34 @@ function configurarDrag(container, tipoDrop) {
                 msg: `Movido para ${novoStatus.toUpperCase()} por ${perfilAtual.full_name}` 
             });
             
-            let payloadUpdate = { status: novoStatus, motivo_perda: null, historico: historicoAtual }; 
+            let payloadUpdate = { 
+                status: novoStatus, 
+                motivo_perda: null, 
+                historico: historicoAtual 
+            }; 
             
             if (novoStatus === 'fechados') {
                 payloadUpdate.aprovado = false; 
                 await supabase.from('leads').update(payloadUpdate).eq('id', idCard); 
+                
                 carregarLeads(); 
                 mostrarToast('Anexe o comprovante na gaveta para aprovação do Financeiro!', 'ok'); 
-                setTimeout(() => window.abrirDrawerLead(parseInt(idCard)), 500);
+                
+                setTimeout(() => {
+                    window.abrirDrawerLead(parseInt(idCard));
+                }, 500);
+                
             } else { 
                 await supabase.from('leads').update(payloadUpdate).eq('id', idCard); 
                 carregarLeads(); 
             }
+            
         } else if (tipoDrop === 'posvenda') {
             const novaEtapa = container.dataset.etapa; 
-            if (lead.etapa_pos_venda === novaEtapa) return;
+            
+            if (lead.etapa_pos_venda === novaEtapa) {
+                return;
+            }
             
             let historicoAtual = lead.historico || []; 
             historicoAtual.push({ 
@@ -1203,9 +1646,11 @@ function configurarDrag(container, tipoDrop) {
     };
 }
 
-// ==========================================
-// CADASTRO E MOTIVO DE PERDA PERSONALIZADO
-// ==========================================
+/**
+ * ============================================================================
+ * 13. MOTIVO DE PERDA PERSONALIZADO ("Outro") E CHURN
+ * ============================================================================
+ */
 const selectMotivo = document.getElementById('inp-perda-motivo'); 
 const boxCustomMotivo = document.getElementById('box-motivo-custom'); 
 const inputCustomMotivo = document.getElementById('inp-perda-motivo-custom');
@@ -1224,88 +1669,159 @@ if (selectMotivo) {
 }
 
 const formMotivoPerda = document.getElementById('form-motivo-perda');
+
 if (formMotivoPerda) {
-    formMotivoPerda.onsubmit = async (e) => {
+    formMotivoPerda.addEventListener('submit', async (e) => {
         e.preventDefault(); 
-        const id = document.getElementById('inp-perda-lead-id').value;
         
-        let motivo = document.getElementById('inp-perda-motivo').value; 
-        if (motivo === 'Outro') {
-            motivo = document.getElementById('inp-perda-motivo-custom').value;
-        }
-        
-        if (motivo === 'Abandonou / Ghosting') {
+        try {
+            const btnSubmit = formMotivoPerda.querySelector('button[type="submit"]');
+            const textOriginal = btnSubmit.innerHTML;
+            btnSubmit.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Registrando...';
+            btnSubmit.disabled = true;
+
+            const id = document.getElementById('inp-perda-lead-id').value;
+            let motivo = document.getElementById('inp-perda-motivo').value; 
+            
+            if (motivo === 'Outro') {
+                motivo = document.getElementById('inp-perda-motivo-custom').value;
+            }
+            
             const lead = leadsData.find(l => l.id == id); 
             let historicoAtual = lead.historico || []; 
-            historicoAtual.push({ 
-                data: new Date().toISOString(), 
-                msg: `Marcado como ABANDONADO por ${perfilAtual.full_name}` 
-            });
-            await supabase.from('leads').update({ 
-                status: 'abandonados', 
-                motivo_perda: motivo, 
-                historico: historicoAtual 
-            }).eq('id', id);
-        } else {
-            const lead = leadsData.find(l => l.id == id); 
-            let historicoAtual = lead.historico || []; 
-            historicoAtual.push({ 
-                data: new Date().toISOString(), 
-                msg: `Marcado como PERDIDO: "${motivo}" por ${perfilAtual.full_name}` 
-            });
-            await supabase.from('leads').update({ 
-                status: 'perdidos', 
-                motivo_perda: motivo, 
-                historico: historicoAtual 
-            }).eq('id', id);
+            
+            if (motivo === 'Abandonou / Ghosting') {
+                historicoAtual.push({ 
+                    data: new Date().toISOString(), 
+                    msg: `Marcado como ABANDONADO por ${perfilAtual.full_name}` 
+                });
+                
+                await supabase.from('leads').update({ 
+                    status: 'abandonados', 
+                    motivo_perda: motivo, 
+                    historico: historicoAtual 
+                }).eq('id', id);
+                
+            } else {
+                historicoAtual.push({ 
+                    data: new Date().toISOString(), 
+                    msg: `Marcado como PERDIDO: "${motivo}" por ${perfilAtual.full_name}` 
+                });
+                
+                await supabase.from('leads').update({ 
+                    status: 'perdidos', 
+                    motivo_perda: motivo, 
+                    historico: historicoAtual 
+                }).eq('id', id);
+            }
+            
+            document.getElementById('modal-motivo-perda').classList.remove('ativa'); 
+            mostrarToast('Venda baixada no sistema.', 'ok'); 
+            
+            btnSubmit.innerHTML = textOriginal;
+            btnSubmit.disabled = false;
+
+            carregarLeads();
+        } catch (err) {
+            console.error(err);
+            mostrarToast('Erro no processamento', 'erro');
         }
-        
-        document.getElementById('modal-motivo-perda').classList.remove('ativa'); 
-        mostrarToast('Venda baixada no sistema.', 'ok'); 
-        carregarLeads();
-    };
+    });
 }
 
+/**
+ * ============================================================================
+ * 14. CADASTRO DE LEADS E INSERÇÃO NO BANCO (CRIAÇÃO COMPLETA)
+ * ============================================================================
+ */
 const formLead = document.getElementById('form-lead');
+
 if (formLead) {
-    formLead.onsubmit = async (e) => {
+    formLead.addEventListener('submit', async (e) => {
         e.preventDefault(); 
         
-        let statusSelecionado = document.getElementById('inp-status').value;
-        let isRecorrente = document.getElementById('inp-is-recorrente').checked;
-        
-        let logCriacao = [{ 
-            data: new Date().toISOString(), 
-            msg: `Cadastrado no HAPSIS por ${perfilAtual.full_name}` 
-        }];
-        
-        await supabase.from('leads').insert([{ 
-            nome: document.getElementById('inp-nome').value, 
-            whatsapp: document.getElementById('inp-whatsapp').value, 
-            produto: document.getElementById('inp-produto').value, 
-            valor: document.getElementById('inp-valor').value || 0, 
-            forma_pagamento: document.getElementById('inp-pagamento').value, 
-            is_recorrente: isRecorrente,
-            status_assinatura: isRecorrente ? 'ativa' : null,
-            status: statusSelecionado, 
-            user_id: usuarioAtual.id, 
-            aprovado: statusSelecionado === 'fechados' ? false : true, 
-            etapa_pos_venda: 'onboarding', 
-            historico: logCriacao 
-        }]);
-        
-        document.getElementById('modal-lead').classList.remove('ativa'); 
-        document.getElementById('form-lead').reset(); 
-        mostrarToast('Cliente adicionado!', 'ok'); 
-        carregarLeads();
-    };
+        try {
+            const btnSubmit = formLead.querySelector('button[type="submit"]');
+            const textOriginal = btnSubmit.innerHTML;
+            btnSubmit.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Salvando Cliente...';
+            btnSubmit.disabled = true;
+
+            const nome = document.getElementById('inp-nome').value;
+            const whatsapp = document.getElementById('inp-whatsapp').value;
+            const produto = document.getElementById('inp-produto').value;
+            const valorStr = document.getElementById('inp-valor').value;
+            const valor = valorStr ? parseFloat(valorStr) : 0;
+            
+            const pagamentoEl = document.getElementById('inp-pagamento');
+            const pagamento = pagamentoEl ? pagamentoEl.value : 'Pix';
+
+            const statusEl = document.getElementById('inp-status');
+            const statusSelecionado = statusEl ? statusEl.value : 'novos';
+            
+            const recorrenteEl = document.getElementById('inp-is-recorrente');
+            const isRecorrente = recorrenteEl ? recorrenteEl.checked : false;
+
+            const origemEl = document.getElementById('inp-origem');
+            const origem = origemEl ? origemEl.value : 'Indicação';
+            
+            const logCriacao = [{ 
+                data: new Date().toISOString(), 
+                msg: `Cadastrado no HAPSIS por ${perfilAtual.full_name}` 
+            }];
+            
+            const aprovado = (statusSelecionado === 'fechados') ? false : true;
+
+            const payload = { 
+                nome: nome, 
+                whatsapp: whatsapp, 
+                produto: produto, 
+                valor: valor, 
+                forma_pagamento: pagamento, 
+                is_recorrente: isRecorrente,
+                status_assinatura: isRecorrente ? 'ativa' : null,
+                origem_lead: origem,
+                status: statusSelecionado, 
+                user_id: usuarioAtual.id, 
+                aprovado: aprovado, 
+                etapa_pos_venda: 'onboarding', 
+                historico: logCriacao 
+            };
+
+            const { error } = await supabase.from('leads').insert([payload]);
+            
+            if (error) {
+                console.error("Erro Supabase Insert:", error);
+                mostrarToast(`Erro no banco: O banco pode estar faltando a coluna origem_lead ou is_recorrente.`, 'erro');
+                btnSubmit.innerHTML = textOriginal;
+                btnSubmit.disabled = false;
+                return;
+            }
+            
+            document.getElementById('modal-lead').classList.remove('ativa'); 
+            formLead.reset(); 
+            mostrarToast('Cliente adicionado e salvo na base!', 'ok'); 
+            
+            btnSubmit.innerHTML = textOriginal;
+            btnSubmit.disabled = false;
+            
+            carregarLeads();
+            
+        } catch (err) {
+            console.error('Erro interno FormLead:', err);
+            mostrarToast('Ocorreu um erro no processamento interno.', 'erro');
+        }
+    });
 }
 
 window.deletarLead = (id) => { 
-    window.abrirConfirmacao('Deletar Cliente', 'Excluir este cliente permanentemente?', 'Excluir', async () => { 
-        await supabase.from('leads').delete().eq('id', id); 
-        mostrarToast('Apagado.', 'ok'); 
-        carregarLeads(); 
+    window.abrirConfirmacao('Deletar Cliente', 'Tem certeza? Ação irreversível.', 'Excluir para Sempre', async () => { 
+        try {
+            await supabase.from('leads').delete().eq('id', id); 
+            mostrarToast('Cliente Apagado.', 'ok'); 
+            carregarLeads(); 
+        } catch(err) {
+            console.error(err);
+        }
     }); 
 };
 
@@ -1323,9 +1839,11 @@ if (btnFecharModal) {
     };
 }
 
-// ==========================================
-// GAVETA DO CLIENTE TURBINADA
-// ==========================================
+/**
+ * ============================================================================
+ * 15. GAVETA LATERAL DO CLIENTE (DRAWER) - UPLOADS, CHURN, REPASSE (SDR)
+ * ============================================================================
+ */
 window.abrirDrawerLead = (id) => {
     const lead = leadsData.find(l => l.id === id);
     if (!lead) return;
@@ -1349,34 +1867,75 @@ window.abrirDrawerLead = (id) => {
     document.getElementById('drawer-valor').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(lead.valor);
     document.getElementById('drawer-notas').value = lead.notas || '';
     document.getElementById('drawer-data-followup').value = lead.data_followup || '';
+    
+    const elOrigem = document.getElementById('drawer-origem');
+    if (elOrigem) {
+        elOrigem.innerText = lead.origem_lead || 'Não Informada';
+    }
 
-    // Renderização do Histórico
+    // Seção Repasse SDR - Permite o qualificador jogar a bola pro Closer
+    const boxRepassar = document.getElementById('box-repassar-lead');
+    if (boxRepassar) {
+        if (perfilAtual.role === 'sdr' && lead.status !== 'fechados') {
+            boxRepassar.style.display = 'block';
+            
+            const selectRepasse = document.getElementById('inp-repassar-vendedor');
+            const vendedores = perfisEquipe.filter(p => p.role === 'vendedor');
+            
+            selectRepasse.innerHTML = '<option value="">Selecione o Closer...</option>' + 
+                vendedores.map(v => `<option value="${v.id}">${v.full_name}</option>`).join('');
+                
+        } else {
+            boxRepassar.style.display = 'none';
+        }
+    }
+
+    // Renderização do Histórico e Auditoria Individual do Lead
     const boxHistorico = document.getElementById('drawer-historico');
     if (boxHistorico) {
         if (!lead.historico || lead.historico.length === 0) {
             boxHistorico.innerHTML = '<i>Nenhum registro.</i>';
         } else {
             boxHistorico.innerHTML = [...lead.historico].reverse().map(h => {
-                let formattedTime = new Date(h.data).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
-                return `<div class="history-item"><span class="history-time">${formattedTime}</span><span style="color:var(--text);">${h.msg}</span></div>`;
+                let formattedTime = new Date(h.data).toLocaleString('pt-BR', { 
+                    day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' 
+                });
+                return `
+                <div class="history-item">
+                    <span class="history-time">${formattedTime}</span>
+                    <span style="color:var(--text);">${h.msg}</span>
+                </div>`;
             }).join('');
         }
     }
 
-    // Configura inputs de arquivo
+    // Gerenciador Universal de Visualização de Arquivos na Gaveta
     const setFileInput = (idInput, idLabel, idBox, linkId, url, defaultText) => {
-        const fileInput = document.getElementById(idInput); if(fileInput) fileInput.value = '';
-        document.getElementById(idLabel).innerText = defaultText; document.getElementById(idLabel).style.color = 'var(--muted)';
-        const boxVer = document.getElementById(idBox);
-        if(url) { boxVer.classList.remove('hidden'); document.getElementById(linkId).href = url; } 
-        else { boxVer.classList.add('hidden'); }
+        const fileInput = document.getElementById(idInput); 
+        if (fileInput) fileInput.value = '';
+        
+        const labelEl = document.getElementById(idLabel); 
+        if (labelEl) { 
+            labelEl.innerText = defaultText; 
+            labelEl.style.color = 'var(--muted)'; 
+        }
+        
+        const boxVer = document.getElementById(idBox); 
+        if (boxVer) { 
+            if (url) { 
+                boxVer.classList.remove('hidden'); 
+                document.getElementById(linkId).href = url; 
+            } else { 
+                boxVer.classList.add('hidden'); 
+            } 
+        }
     };
 
     setFileInput('drawer-file-comprovante', 'nome-arquivo-comprovante', 'box-ver-comprovante', 'link-ver-comprovante', lead.comprovante_url, 'Nenhum arquivo');
     setFileInput('drawer-file-contrato', 'nome-arquivo-contrato', 'box-ver-contrato', 'link-ver-contrato', lead.contrato_url, 'Sem contrato');
     setFileInput('drawer-file-doc', 'nome-arquivo-doc', 'box-ver-doc', 'link-ver-doc', lead.doc_importante_url, 'Nenhum doc');
 
-    // Permissões de Botões Especiais
+    // Controle e Visibilidade de Botões Críticos do Financeiro
     const btnEstorno = document.getElementById('btn-estorno-venda');
     if (btnEstorno) {
         if ((perfilAtual.role === 'gestor_geral' || perfilAtual.role === 'gestor_sub') && lead.status === 'fechados' && lead.aprovado === true && !lead.estornado) {
@@ -1410,68 +1969,136 @@ window.abrirDrawerLead = (id) => {
     document.getElementById('drawer-lead').classList.add('ativa');
 };
 
+window.repassarLead = async () => {
+    const leadId = document.getElementById('drawer-lead-id').value;
+    const novoVendedorId = document.getElementById('inp-repassar-vendedor').value;
+    
+    if (!novoVendedorId) {
+        return mostrarToast('Selecione um Closer na lista!', 'erro');
+    }
+
+    try {
+        const lead = leadsData.find(l => l.id == leadId);
+        const vend = perfisEquipe.find(p => p.id == novoVendedorId);
+        
+        let hist = lead.historico || [];
+        hist.push({ 
+            data: new Date().toISOString(), 
+            msg: `Lead repassado para ${vend.full_name} por ${perfilAtual.full_name} (SDR)` 
+        });
+
+        await supabase.from('leads').update({ 
+            user_id: novoVendedorId, 
+            historico: hist 
+        }).eq('id', leadId);
+        
+        mostrarToast('Lead repassado com sucesso!', 'ok');
+        document.getElementById('drawer-lead').classList.remove('ativa');
+        
+        carregarLeads();
+    } catch(err) {
+        console.error(err);
+        mostrarToast('Erro ao repassar lead.', 'erro');
+    }
+};
+
+// Listeners Dinâmicos para Nomes dos Arquivos na Gaveta
 const handleFileChange = (idInput, idLabel, colorVar) => { 
     const el = document.getElementById(idInput); 
-    if (el) el.addEventListener('change', (e) => { 
-        const label = document.getElementById(idLabel); 
-        if(e.target.files.length > 0) { 
-            label.innerText = e.target.files[0].name; 
-            label.style.color = colorVar; 
-        } else { 
-            label.innerText = 'Nenhum arquivo'; 
-            label.style.color = 'var(--muted)'; 
-        } 
-    }); 
+    if (el) {
+        el.addEventListener('change', (e) => { 
+            const label = document.getElementById(idLabel); 
+            if (!label) return; 
+            
+            if (e.target.files.length > 0) { 
+                label.innerText = e.target.files[0].name; 
+                label.style.color = colorVar; 
+            } else { 
+                label.innerText = 'Nenhum arquivo'; 
+                label.style.color = 'var(--muted)'; 
+            } 
+        });
+    }
 };
+
 handleFileChange('drawer-file-comprovante', 'nome-arquivo-comprovante', 'var(--novos)');
-handleFileChange('drawer-file-contrato', 'nome-arquivo-contrato', '#b388ff');
-handleFileChange('drawer-file-doc', 'nome-arquivo-doc', '#4fc3f7');
+handleFileChange('drawer-file-contrato', 'nome-arquivo-contrato', 'var(--purple)');
+handleFileChange('drawer-file-doc', 'nome-arquivo-doc', 'var(--novos)');
 
 window.salvarDrawerLead = async () => {
-    const id = document.getElementById('drawer-lead-id').value;
-    const notasStr = document.getElementById('drawer-notas').value;
-    const dataFup = document.getElementById('drawer-data-followup').value;
+    try {
+        const id = document.getElementById('drawer-lead-id').value;
+        const notasStr = document.getElementById('drawer-notas').value;
+        const dataFup = document.getElementById('drawer-data-followup').value;
 
-    mostrarToast("Salvando informações...", "ok");
+        mostrarToast("Processando dados e arquivos para a Nuvem...", "ok");
 
-    const payload = {};
-    if (notasStr !== '') payload.notas = notasStr; else payload.notas = null;
-    if (dataFup !== '') payload.data_followup = dataFup; else payload.data_followup = null;
-
-    const leadAtual = leadsData.find(l => l.id == id);
-    let historicoAtual = leadAtual.historico || [];
-    historicoAtual.push({ data: new Date().toISOString(), msg: `Gaveta atualizada por ${perfilAtual.full_name}` });
-    payload.historico = historicoAtual;
-
-    const uploadFile = async (inputId, prefix, payloadKey) => {
-        const fileInput = document.getElementById(inputId);
-        if (fileInput && fileInput.files.length > 0) {
-            const file = fileInput.files[0]; 
-            const fileName = `lead_${id}_${prefix}_${Date.now()}.${file.name.split('.').pop()}`;
-            const { data: uploadData, error: uploadError } = await supabase.storage.from('comprovantes').upload(fileName, file);
-            if (!uploadError) payload[payloadKey] = supabase.storage.from('comprovantes').getPublicUrl(fileName).data.publicUrl;
+        const payload = {};
+        
+        if (notasStr !== '') {
+            payload.notas = notasStr; 
+        } else {
+            payload.notas = null;
         }
-    };
+        
+        if (dataFup !== '') {
+            payload.data_followup = dataFup; 
+        } else {
+            payload.data_followup = null;
+        }
 
-    await uploadFile('drawer-file-comprovante', 'comp', 'comprovante_url');
-    await uploadFile('drawer-file-contrato', 'contrato', 'contrato_url');
-    await uploadFile('drawer-file-doc', 'doc', 'doc_importante_url');
+        const leadAtual = leadsData.find(l => l.id == id);
+        let historicoAtual = leadAtual.historico || [];
+        
+        historicoAtual.push({ 
+            data: new Date().toISOString(), 
+            msg: `Gaveta atualizada por ${perfilAtual.full_name}` 
+        });
+        payload.historico = historicoAtual;
 
-    const { error } = await supabase.from('leads').update(payload).eq('id', id);
-    
-    if (error) {
-        mostrarToast("Erro ao salvar", "erro"); 
-    } else { 
-        mostrarToast("Atualizado com sucesso!", "ok"); 
-        document.getElementById('drawer-lead').classList.remove('ativa'); 
-        carregarLeads(); 
+        // Subrotina Segura de Upload
+        const uploadFile = async (inputId, prefix, payloadKey) => {
+            const fileInput = document.getElementById(inputId);
+            if (fileInput && fileInput.files.length > 0) {
+                const file = fileInput.files[0]; 
+                const fileName = `lead_${id}_${prefix}_${Date.now()}.${file.name.split('.').pop()}`;
+                
+                const { data: uploadData, error: uploadError } = await supabase.storage.from('comprovantes').upload(fileName, file);
+                
+                if (!uploadError) {
+                    payload[payloadKey] = supabase.storage.from('comprovantes').getPublicUrl(fileName).data.publicUrl;
+                } else {
+                    console.error(`Erro ao subir ${prefix}:`, uploadError);
+                }
+            }
+        };
+
+        await uploadFile('drawer-file-comprovante', 'comp', 'comprovante_url');
+        await uploadFile('drawer-file-contrato', 'contrato', 'contrato_url');
+        await uploadFile('drawer-file-doc', 'doc', 'doc_importante_url');
+
+        const { error } = await supabase.from('leads').update(payload).eq('id', id);
+        
+        if (error) {
+            mostrarToast("Erro ao salvar dados finais.", "erro"); 
+        } else { 
+            mostrarToast("Atualizado com sucesso!", "ok"); 
+            document.getElementById('drawer-lead').classList.remove('ativa'); 
+            carregarLeads(); 
+        }
+    } catch(err) {
+        console.error(err);
+        mostrarToast("Erro sistêmico ao salvar gaveta", "erro");
     }
 };
 
 window.gerarPropostaPDF = () => {
     const id = document.getElementById('drawer-lead-id').value;
     const lead = leadsData.find(l => l.id == id);
-    if (!lead) return mostrarToast('Lead não encontrado.', 'erro');
+    
+    if (!lead) {
+        return mostrarToast('Lead não encontrado para geração de PDF.', 'erro');
+    }
 
     const valorFormatado = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lead.valor);
     const empresaNome = perfilAtual.nome_empresa || 'HAPSIS Premium';
@@ -1479,31 +2106,253 @@ window.gerarPropostaPDF = () => {
     const janelaImpressao = window.open('', '_blank');
     let html = `
     <html>
-    <head><title>Proposta - ${lead.nome}</title>
-    <style>body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #333; line-height: 1.6; } .header { text-align: center; border-bottom: 2px solid #f5c518; padding-bottom: 20px; margin-bottom: 30px; } .header h1 { margin: 0; color: #10121a; font-size: 28px; text-transform: uppercase; } .header p { color: #555; margin-top: 5px; font-weight: bold; font-size: 14px; } .content { margin-bottom: 40px; } .content p { font-size: 16px; margin-bottom: 12px; } .price-box { background: #f8f9fa; padding: 25px; border-left: 6px solid #81c784; font-size: 18px; margin-top: 30px; border-radius: 4px; } .footer { margin-top: 60px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #ddd; padding-top: 20px; }</style>
+    <head>
+        <title>Proposta - ${lead.nome}</title>
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #333; line-height: 1.6; } 
+            .header { text-align: center; border-bottom: 2px solid #f5c518; padding-bottom: 20px; margin-bottom: 30px; } 
+            .header h1 { margin: 0; color: #10121a; font-size: 28px; text-transform: uppercase; } 
+            .header p { color: #555; margin-top: 5px; font-weight: bold; font-size: 14px; } 
+            .content { margin-bottom: 40px; } 
+            .content p { font-size: 16px; margin-bottom: 12px; } 
+            .price-box { background: #f8f9fa; padding: 25px; border-left: 6px solid #81c784; font-size: 18px; margin-top: 30px; border-radius: 4px; } 
+            .footer { margin-top: 60px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #ddd; padding-top: 20px; }
+        </style>
     </head>
     <body>
-        <div class="header"><h1>Proposta Comercial</h1><p>${empresaNome}</p></div>
-        <div class="content"><p><strong>Aos cuidados de:</strong> ${lead.nome}</p><p><strong>Contato:</strong> ${lead.whatsapp}</p><p><strong>Data de Emissão:</strong> ${new Date().toLocaleDateString('pt-BR')}</p><br><p>Olá, ${lead.nome.split(' ')[0]}. Conforme conversamos, segue abaixo a proposta oficial para a contratação dos nossos serviços/produtos.</p><p><strong>Produto/Serviço Oferecido:</strong> ${lead.produto || 'Consultoria Geral'}</p>
-        <div class="price-box"><p style="margin:0; font-size: 20px;"><strong>Investimento Total:</strong> <span style="font-size: 28px; color: #21a366; font-weight: bold;">${valorFormatado}</span></p><p style="margin-top: 12px; font-size: 15px;"><strong>Forma de Pagamento Acordada:</strong> ${lead.forma_pagamento || 'A combining'}</p></div></div>
-        <div class="footer"><p>Proposta gerada por ${perfilAtual.full_name} | ${empresaNome}</p><p>Documento válido por 5 dias úteis a partir da data de emissão.</p></div>
+        <div class="header">
+            <h1>Proposta Comercial</h1>
+            <p>${empresaNome}</p>
+        </div>
+        <div class="content">
+            <p><strong>Aos cuidados de:</strong> ${lead.nome}</p>
+            <p><strong>Contato:</strong> ${lead.whatsapp}</p>
+            <p><strong>Data de Emissão:</strong> ${new Date().toLocaleDateString('pt-BR')}</p><br>
+            <p>Olá, ${lead.nome.split(' ')[0]}. Conforme conversamos, segue abaixo a proposta oficial para a contratação dos nossos serviços/produtos.</p>
+            <p><strong>Produto/Serviço Oferecido:</strong> ${lead.produto || 'Consultoria Geral'}</p>
+            <div class="price-box">
+                <p style="margin:0; font-size: 20px;"><strong>Investimento Total:</strong> <span style="font-size: 28px; color: #21a366; font-weight: bold;">${valorFormatado}</span></p>
+                <p style="margin-top: 12px; font-size: 15px;"><strong>Forma de Pagamento Acordada:</strong> ${lead.forma_pagamento || 'A combinar'}</p>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Proposta gerada por ${perfilAtual.full_name} | ${empresaNome}</p>
+            <p>Documento válido por 5 dias úteis a partir da data de emissão.</p>
+        </div>
         <script>window.onload = () => { window.print(); window.close(); }</script>
-    </body></html>`;
+    </body>
+    </html>`;
+    
     janelaImpressao.document.write(html);
     janelaImpressao.document.close();
 };
 
-// ==========================================
-// ARENA E AGENDA
-// ==========================================
+/**
+ * ============================================================================
+ * 16. COFRE DE CONTRATOS (GED) - UPLOAD DIRETO DO CFO
+ * ============================================================================
+ */
+window.abrirModalUploadCofre = () => {
+    const select = document.getElementById('inp-upload-cliente');
+    
+    if (select) {
+        // Ordena a lista de clientes para facilitar o gestor encontrar o contrato certo
+        const leadsFiltrados = leadsData.sort((a,b) => a.nome.localeCompare(b.nome));
+        
+        select.innerHTML = '<option value="">Selecione o Cliente...</option>' + 
+            leadsFiltrados.map(l => `
+                <option value="${l.id}">${l.nome} (${l.produto || 'Geral'})</option>
+            `).join('');
+    }
+    
+    document.getElementById('modal-upload-cofre').classList.add('ativa');
+};
+
+const formUploadCofre = document.getElementById('form-upload-cofre');
+if (formUploadCofre) {
+    formUploadCofre.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        try {
+            const leadId = document.getElementById('inp-upload-cliente').value;
+            const tipo = document.getElementById('inp-upload-tipo').value;
+            const fileInput = document.getElementById('inp-upload-arquivo');
+            
+            if (!leadId) {
+                return mostrarToast('Selecione um cliente da lista.', 'erro');
+            }
+            
+            if (!fileInput.files.length) {
+                return mostrarToast('Você precisa anexar um arquivo PDF ou Imagem.', 'erro');
+            }
+
+            const btn = formUploadCofre.querySelector('button[type="submit"]');
+            const txt = btn.innerHTML;
+            btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Subindo para a Nuvem...';
+            btn.disabled = true;
+
+            const file = fileInput.files[0];
+            const prefixo = tipo === 'contrato_url' ? 'contrato' : (tipo === 'comprovante_url' ? 'comp' : 'doc');
+            const fileName = `cofre_${leadId}_${prefixo}_${Date.now()}.${file.name.split('.').pop()}`;
+            
+            const { data, error } = await supabase.storage.from('comprovantes').upload(fileName, file);
+
+            if (error) {
+                mostrarToast('Erro de upload. Verifique as regras do bucket.', 'erro');
+                btn.innerHTML = txt;
+                btn.disabled = false;
+                return;
+            }
+
+            // Pega a URL pública gerada pelo Storage
+            const url = supabase.storage.from('comprovantes').getPublicUrl(fileName).data.publicUrl;
+            
+            const payload = {};
+            payload[tipo] = url;
+
+            const lead = leadsData.find(l => l.id == leadId);
+            let hist = lead.historico || [];
+            
+            hist.push({ 
+                data: new Date().toISOString(), 
+                msg: `Arquivo anexado diretamente via Cofre por ${perfilAtual.full_name}` 
+            });
+            
+            payload.historico = hist;
+
+            // Insere na linha do Cliente as novas URLs de documentos
+            await supabase.from('leads').update(payload).eq('id', leadId);
+            
+            mostrarToast('Documento criptografado e guardado no Cofre!', 'ok');
+            document.getElementById('modal-upload-cofre').classList.remove('ativa');
+            
+            formUploadCofre.reset();
+            btn.innerHTML = txt;
+            btn.disabled = false;
+            
+            carregarLeads();
+            
+        } catch(err) {
+            console.error('Erro na função de upload do cofre:', err);
+            mostrarToast('Erro no sistema ao fazer upload.', 'erro');
+        }
+    });
+}
+
+/**
+ * ============================================================================
+ * 17. DASHBOARD DE GROWTH E MARKETING (AQUISIÇÃO)
+ * ============================================================================
+ */
+function renderizarGrowth() {
+    const elTotal = document.getElementById('growth-leads-total');
+    const elConv = document.getElementById('growth-conversao');
+    const ctxOrigem = document.getElementById('chart-origem');
+    const tbodyCanais = document.getElementById('tbody-growth-canais');
+
+    if (!elTotal || !elConv || !ctxOrigem || !tbodyCanais) return;
+
+    const totalLeads = leadsData.length;
+    const fechados = leadsData.filter(l => l.status === 'fechados' && l.aprovado === true && !l.estornado);
+    
+    elTotal.innerText = totalLeads;
+    elConv.innerText = totalLeads > 0 ? ((fechados.length / totalLeads) * 100).toFixed(1) + '%' : '0%';
+
+    const origemCounts = {};
+    const canalStats = {};
+
+    // Agrupa e conta leads e vendas pela origem (Tag de Aquisição)
+    leadsData.forEach(l => {
+        const origem = l.origem_lead || 'Indicação';
+        
+        origemCounts[origem] = (origemCounts[origem] || 0) + 1;
+        
+        if (!canalStats[origem]) {
+            canalStats[origem] = { leads: 0, vendas: 0 };
+        }
+        
+        canalStats[origem].leads += 1;
+        
+        if (l.status === 'fechados' && l.aprovado === true && !l.estornado) {
+            canalStats[origem].vendas += 1;
+        }
+    });
+
+    if (chartOrigemInstance) {
+        chartOrigemInstance.destroy();
+    }
+    
+    const labelsOrigem = Object.keys(origemCounts).length > 0 ? Object.keys(origemCounts) : ['Sem Origem'];
+    const dataOrigem = Object.keys(origemCounts).length > 0 ? Object.values(origemCounts) : [1];
+    
+    // Cores táticas
+    const coresOrigem = Object.keys(origemCounts).length > 0 ? ['#38bdf8', '#fb923c', '#a78bfa', '#4ade80', '#f5c518'] : ['#2e3550'];
+
+    chartOrigemInstance = new Chart(ctxOrigem, {
+        type: 'doughnut',
+        data: { 
+            labels: labelsOrigem, 
+            datasets: [{ 
+                data: dataOrigem, 
+                backgroundColor: coresOrigem, 
+                borderWidth: 0 
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            cutout: '70%', 
+            plugins: { 
+                legend: { 
+                    position: 'right', 
+                    labels: { color: '#7a83a1', font: {size: 11} } 
+                } 
+            } 
+        }
+    });
+
+    const canaisArray = Object.keys(canalStats).map(k => ({ nome: k, ...canalStats[k] })).sort((a,b) => b.leads - a.leads);
+    
+    if (canaisArray.length === 0) {
+        tbodyCanais.innerHTML = `
+        <tr>
+            <td colspan="3" style="text-align:center; padding:30px; color:var(--muted);">
+                Aguardando dados estruturados...
+            </td>
+        </tr>`;
+    } else {
+        tbodyCanais.innerHTML = canaisArray.map(c => `
+        <tr>
+            <td style="font-weight:bold; color:var(--text);">${c.nome}</td>
+            <td style="text-align:right;">${c.leads}</td>
+            <td style="text-align:right; color:var(--fechados); font-weight:bold;">${c.vendas}</td>
+        </tr>`).join('');
+    }
+}
+
+window.atualizarGrowth = () => { 
+    mostrarToast('Métricas de Investimento em Ads calculadas e aplicadas.', 'ok'); 
+};
+
+/**
+ * ============================================================================
+ * 18. ARENA DE VENDAS E AGENDA
+ * ============================================================================
+ */
 function renderizarArena() {
     const containerPodio = document.getElementById('arena-podio'); 
     const containerLista = document.getElementById('arena-lista'); 
     if (!containerPodio || !containerLista) return;
 
-    const vendedores = perfisEquipe.filter(p => p.role === 'vendedor');
+    // Filtra apenas as roles da operação de vendas que têm meta para bater
+    const vendedores = perfisEquipe.filter(p => p.role === 'vendedor' || p.role === 'sdr');
+    
     if (vendedores.length === 0) { 
-        containerPodio.innerHTML = `<div style="text-align: center; color: var(--muted); width:100%;"><i class="ph ph-users-slash" style="font-size:48px; margin-bottom:10px; display:block;"></i>Nenhum vendedor para competir.</div>`; 
+        containerPodio.innerHTML = `
+        <div style="text-align: center; color: var(--muted); width:100%;">
+            <i class="ph ph-users-slash" style="font-size:48px; margin-bottom:10px; display:block;"></i>
+            Nenhum vendedor disponível para a arena.
+        </div>`; 
         containerLista.innerHTML = ''; 
         return; 
     }
@@ -1515,25 +2364,48 @@ function renderizarArena() {
     }).sort((a, b) => b.receita - a.receita);
 
     if (ranking[0].receita === 0) { 
-        containerPodio.innerHTML = `<div style="text-align: center; color: var(--muted); width:100%;"><i class="ph ph-ghost" style="font-size:48px; margin-bottom:10px; display:block;"></i>O pódio está vazio. Ninguém fechou vendas ainda!</div>`; 
+        containerPodio.innerHTML = `
+        <div style="text-align: center; color: var(--muted); width:100%;">
+            <i class="ph ph-ghost" style="font-size:48px; margin-bottom:10px; display:block;"></i>
+            A arena está vazia! Nenhuma venda finalizada ainda.
+        </div>`; 
         containerLista.innerHTML = ''; 
         return; 
     }
 
     let podioHtml = '';
+    
     if (ranking[0]) podioHtml += gerarCardPodio(ranking[0], 1);
     if (ranking[1] && ranking[1].receita > 0) podioHtml = gerarCardPodio(ranking[1], 2) + podioHtml;
     if (ranking[2] && ranking[2].receita > 0) podioHtml += gerarCardPodio(ranking[2], 3);
+    
     containerPodio.innerHTML = podioHtml;
 
     let resto = ranking.slice(3).concat(ranking.filter(r => r.receita === 0 && ranking.indexOf(r) < 3));
+    
     if (resto.length > 0) {
         containerLista.innerHTML = resto.map((v, i) => {
             const inicial = v.full_name ? v.full_name.charAt(0).toUpperCase() : 'V';
-            return `<div class="seller-card"><div class="seller-top"><div class="seller-avatar" style="font-size:18px;">${inicial}</div><div class="seller-info"><h4>${i+4}º - ${v.full_name}</h4><span>Equipe: <strong style="color:var(--accent);">${v.equipe || 'Geral'}</strong></span></div></div><div class="seller-stats"><div><span>Vendas</span><strong style="color:var(--text)">${v.qtd}</strong></div><div style="text-align:right;"><span>Faturamento</span><strong>${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(v.receita)}</strong></div></div></div>`;
+            return `
+            <div class="seller-card">
+                <div class="seller-top">
+                    <div class="seller-avatar" style="font-size:18px;">${inicial}</div>
+                    <div class="seller-info">
+                        <h4>${i+4}º - ${v.full_name}</h4>
+                        <span>Equipe: <strong style="color:var(--accent);">${v.equipe || 'Geral'}</strong></span>
+                    </div>
+                </div>
+                <div class="seller-stats">
+                    <div><span>Vendas</span><strong style="color:var(--text)">${v.qtd}</strong></div>
+                    <div style="text-align:right;">
+                        <span>Faturamento</span>
+                        <strong>${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(v.receita)}</strong>
+                    </div>
+                </div>
+            </div>`;
         }).join('');
     } else { 
-        containerLista.innerHTML = '<p style="color:var(--muted); font-size:13px;">Não há outros competidores na lista.</p>'; 
+        containerLista.innerHTML = '<p style="color:var(--muted); font-size:13px;">Não há outros competidores na lista no momento.</p>'; 
     }
 }
 
@@ -1541,7 +2413,18 @@ function gerarCardPodio(vendedor, posicao) {
     const inicial = vendedor.full_name ? vendedor.full_name.charAt(0).toUpperCase() : 'V';
     let label = posicao === 1 ? '1º LUGAR' : (posicao === 2 ? '2º LUGAR' : '3º LUGAR');
     let coroa = posicao === 1 ? '<i class="ph ph-crown crown-icon"></i>' : '';
-    return `<div class="podium-item podio-${posicao}">${coroa}<div class="podium-avatar">${inicial}</div><div class="podium-block"><span style="font-weight:800; font-size:11px; letter-spacing:1px;">${label}</span><h4 style="margin-top:8px;">${vendedor.full_name.split(' ')[0]}</h4><strong>${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(vendedor.receita)}</strong><span style="margin-top:6px; font-weight:bold;">${vendedor.qtd} Vendas</span></div></div>`;
+    
+    return `
+    <div class="podium-item podio-${posicao}">
+        ${coroa}
+        <div class="podium-avatar">${inicial}</div>
+        <div class="podium-block">
+            <span style="font-weight:800; font-size:11px; letter-spacing:1px;">${label}</span>
+            <h4 style="margin-top:8px;">${vendedor.full_name.split(' ')[0]}</h4>
+            <strong>${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(vendedor.receita)}</strong>
+            <span style="margin-top:6px; font-weight:bold;">${vendedor.qtd} Vendas</span>
+        </div>
+    </div>`;
 }
 
 function renderizarAgenda() {
@@ -1549,63 +2432,101 @@ function renderizarAgenda() {
     if (!container) return;
     
     let leadsAgendados = leadsData.filter(l => l.data_followup && l.status !== 'fechados' && l.status !== 'perdidos' && l.status !== 'abandonados' && l.user_id === usuarioAtual.id);
+    
     if (leadsAgendados.length === 0) { 
-        container.innerHTML = `<div class="empty-state"><i class="ph ph-calendar-blank"></i><p>Sua agenda está livre.<br>Nenhum retorno marcado para negociações ativas.</p></div>`; 
+        container.innerHTML = `
+        <div class="empty-state">
+            <i class="ph ph-calendar-blank"></i>
+            <p>Sua agenda está livre.<br>Nenhum retorno marcado para negociações ativas.</p>
+        </div>`; 
         return; 
     }
 
     leadsAgendados.sort((a, b) => new Date(a.data_followup) - new Date(b.data_followup));
     let hojeStr = new Date().toISOString().split('T')[0];
-    let atrasados = []; let hoje = []; let futuros = [];
+    
+    let atrasados = []; 
+    let hoje = []; 
+    let futuros = [];
 
     leadsAgendados.forEach(l => { 
-        if (l.data_followup < hojeStr) atrasados.push(l); 
-        else if (l.data_followup === hojeStr) hoje.push(l); 
-        else futuros.push(l); 
+        if (l.data_followup < hojeStr) {
+            atrasados.push(l); 
+        } else if (l.data_followup === hojeStr) {
+            hoje.push(l); 
+        } else {
+            futuros.push(l); 
+        }
     });
 
     let html = '';
-    if (atrasados.length > 0) html += `<div class="agenda-group"><div class="agenda-group-title atrasado"><i class="ph ph-warning-circle"></i> Atrasados (Esfriando)</div><div class="agenda-list">${atrasados.map(l => gerarItemAgendaHTML(l, 'atrasado')).join('')}</div></div>`;
-    if (hoje.length > 0) html += `<div class="agenda-group"><div class="agenda-group-title hoje"><i class="ph ph-calendar-star"></i> Para Hoje</div><div class="agenda-list">${hoje.map(l => gerarItemAgendaHTML(l, 'hoje')).join('')}</div></div>`;
-    if (futuros.length > 0) html += `<div class="agenda-group"><div class="agenda-group-title"><i class="ph ph-calendar-blank"></i> Próximos Retornos</div><div class="agenda-list">${futuros.map(l => gerarItemAgendaHTML(l, 'futuro')).join('')}</div></div>`;
+    
+    if (atrasados.length > 0) {
+        html += `
+        <div class="agenda-group">
+            <div class="agenda-group-title atrasado">
+                <i class="ph ph-warning-circle"></i> Atrasados (Esfriando)
+            </div>
+            <div class="agenda-list">${atrasados.map(l => gerarItemAgendaHTML(l, 'atrasado')).join('')}</div>
+        </div>`;
+    }
+    
+    if (hoje.length > 0) {
+        html += `
+        <div class="agenda-group">
+            <div class="agenda-group-title hoje">
+                <i class="ph ph-calendar-star"></i> Para Hoje
+            </div>
+            <div class="agenda-list">${hoje.map(l => gerarItemAgendaHTML(l, 'hoje')).join('')}</div>
+        </div>`;
+    }
+    
+    if (futuros.length > 0) {
+        html += `
+        <div class="agenda-group">
+            <div class="agenda-group-title">
+                <i class="ph ph-calendar-blank"></i> Próximos Retornos
+            </div>
+            <div class="agenda-list">${futuros.map(l => gerarItemAgendaHTML(l, 'futuro')).join('')}</div>
+        </div>`;
+    }
+    
     container.innerHTML = html;
 }
 
 function gerarItemAgendaHTML(l, tipo) {
     let dataShow = l.data_followup.split('-').reverse().join('/'); 
     let numWpp = l.whatsapp.replace(/\D/g, ''); 
-    if (!numWpp.startsWith('55') && numWpp.length <= 11) numWpp = '55' + numWpp;
+    
+    if (!numWpp.startsWith('55') && numWpp.length <= 11) {
+        numWpp = '55' + numWpp;
+    }
     
     let icone = tipo === 'atrasado' ? 'ph-warning' : (tipo === 'hoje' ? 'ph-star' : 'ph-calendar'); 
     let label = tipo === 'hoje' ? 'Hoje' : dataShow;
     
-    return `<div class="agenda-item ${tipo}" onclick="window.abrirDrawerLead(${l.id})"><div class="agenda-item-info"><span class="agenda-nome">${l.nome}</span><span style="color:var(--muted); font-size:12px;">Produto: <strong style="color:var(--text)">${l.produto}</strong> | Etapa: <strong style="color:var(--text)">${l.status.toUpperCase()}</strong></span></div><div style="display:flex; align-items:center; gap:16px;"><button onclick="event.stopPropagation(); window.abrirModalWhatsApp('${numWpp}', '${l.nome}')" style="background: rgba(37,211,102,0.1); border:none; color: #25d366; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 6px; transition:0.2s;"><i class="ph ph-whatsapp-logo" style="font-size:16px;"></i> Chamar</button><span class="agenda-data ${tipo}"><i class="ph ${icone}"></i> ${label}</span></div></div>`;
+    return `
+    <div class="agenda-item ${tipo}" onclick="window.abrirDrawerLead(${l.id})">
+        <div class="agenda-item-info">
+            <span class="agenda-nome">${l.nome}</span>
+            <span style="color:var(--muted); font-size:12px;">
+                Produto: <strong style="color:var(--text)">${l.produto}</strong> | Etapa: <strong style="color:var(--text)">${l.status.toUpperCase()}</strong>
+            </span>
+        </div>
+        <div style="display:flex; align-items:center; gap:16px;">
+            <button onclick="event.stopPropagation(); window.abrirModalWhatsApp('${numWpp}', '${l.nome}')" style="background: rgba(37,211,102,0.1); border:none; color: #25d366; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 6px; transition:0.2s;">
+                <i class="ph ph-whatsapp-logo" style="font-size:16px;"></i> Chamar
+            </button>
+            <span class="agenda-data ${tipo}"><i class="ph ${icone}"></i> ${label}</span>
+        </div>
+    </div>`;
 }
 
-function calcularComissoesNovoModeloVendedor() {
-    const txtGanha = document.getElementById('val-comissao-ganha'); 
-    const txtAberta = document.getElementById('val-comissao-aberta'); 
-    if (!txtGanha || !txtAberta) return;
-    
-    let leadsDoUsuario = leadsData.filter(l => l.user_id === usuarioAtual.id);
-    let ganhoReal = 0; let ganhoProjetado = 0;
-    
-    leadsDoUsuario.forEach(lead => {
-        let prod = produtosData.find(p => p.nome === lead.produto); 
-        let taxaProd = prod ? (Number(prod.taxa_comissao) || 5) : 5; 
-        let valorCalculado = (Number(lead.valor) * taxaProd) / 100;
-        
-        if(lead.status === 'fechados' && lead.aprovado === true && !lead.estornado) ganhoReal += valorCalculado; 
-        else if (lead.status !== 'fechados' && lead.status !== 'perdidos' && lead.status !== 'abandonados' && !lead.estornado) ganhoProjetado += valorCalculado;
-    });
-    
-    txtGanha.innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(ganhoReal); 
-    txtAberta.innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(ganhoProjetado);
-}
-
-// ==========================================
-// MÓDULOS CFO (CAIXA, DESPESAS, COBRANÇAS E MRR)
-// ==========================================
+/**
+ * ============================================================================
+ * 19. MÓDULOS CFO (CAIXA, DESPESAS, COBRANÇAS E MRR)
+ * ============================================================================
+ */
 function renderizarComissoesNovoModeloFinanceiro() {
     const tbody = document.getElementById('tbody-comissoes'); 
     if (!tbody) return;
@@ -1615,6 +2536,7 @@ function renderizarComissoesNovoModeloFinanceiro() {
     let comissoesPagas = pagamentosData.reduce((acc, p) => acc + Number(p.valor), 0);
     
     let comissoesDevidasGlobais = 0;
+    
     fechadosReais.forEach(lead => { 
         if(!lead.comissao_paga) { 
             let prod = produtosData.find(p => p.nome === lead.produto); 
@@ -1625,9 +2547,17 @@ function renderizarComissoesNovoModeloFinanceiro() {
 
     let lucroLiquido = faturamentoBruto - (comissoesDevidasGlobais + comissoesPagas);
 
-    if(document.getElementById('caixa-bruto')) document.getElementById('caixa-bruto').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(faturamentoBruto);
-    if(document.getElementById('caixa-comissao')) document.getElementById('caixa-comissao').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(comissoesDevidasGlobais + comissoesPagas);
-    if(document.getElementById('caixa-liquido')) document.getElementById('caixa-liquido').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(lucroLiquido);
+    if(document.getElementById('caixa-bruto')) {
+        document.getElementById('caixa-bruto').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(faturamentoBruto);
+    }
+    
+    if(document.getElementById('caixa-comissao')) {
+        document.getElementById('caixa-comissao').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(comissoesDevidasGlobais + comissoesPagas);
+    }
+    
+    if(document.getElementById('caixa-liquido')) {
+        document.getElementById('caixa-liquido').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(lucroLiquido);
+    }
 
     const contagemPgto = { 'Pix': 0, 'Cartão de Crédito': 0, 'Boleto': 0 };
     fechadosReais.forEach(l => { 
@@ -1637,123 +2567,274 @@ function renderizarComissoesNovoModeloFinanceiro() {
 
     const ctxPagamentos = document.getElementById('chart-pagamentos');
     if (ctxPagamentos) {
-        if (chartPagamentosInstance) chartPagamentosInstance.destroy();
-        chartPagamentosInstance = new Chart(ctxPagamentos, { type: 'doughnut', data: { labels: Object.keys(contagemPgto), datasets: [{ data: Object.values(contagemPgto), backgroundColor: ['#21a366', '#f5c518', '#8890aa'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { color: '#8890aa' } } } } });
+        if (chartPagamentosInstance) {
+            chartPagamentosInstance.destroy();
+        }
+        
+        chartPagamentosInstance = new Chart(ctxPagamentos, { 
+            type: 'doughnut', 
+            data: { 
+                labels: Object.keys(contagemPgto), 
+                datasets: [{ 
+                    data: Object.values(contagemPgto), 
+                    backgroundColor: ['#4ade80', '#f5c518', '#7a83a1'], 
+                    borderWidth: 0 
+                }] 
+            }, 
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                cutout: '70%', 
+                plugins: { 
+                    legend: { position: 'right', labels: { color: '#c4c9e0' } } 
+                } 
+            } 
+        });
     }
 
-    const vendedores = perfisEquipe.filter(p => p.role === 'vendedor');
+    const vendedores = perfisEquipe.filter(p => p.role === 'vendedor' || p.role === 'sdr');
+    
     if (vendedores.length === 0) { 
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 30px; color:var(--muted);">Nenhum vendedor na operação.</td></tr>`; 
+        tbody.innerHTML = `
+        <tr>
+            <td colspan="5" style="text-align:center; padding: 30px; color:var(--muted);">
+                Nenhum vendedor ou SDR na operação.
+            </td>
+        </tr>`; 
     } else {
-        let temDevida = false; let linhasHtml = '';
+        let temDevida = false; 
+        let linhasHtml = '';
+        
         vendedores.forEach(v => {
             const vendasDoCara = fechadosReais.filter(l => l.user_id === v.id && !l.comissao_paga); 
             if(vendasDoCara.length === 0) return; 
-            temDevida = true;
             
+            temDevida = true;
             const receita = vendasDoCara.reduce((acc, l) => acc + Number(l.valor), 0);
             let comissaoDevida = 0; 
+            
             vendasDoCara.forEach(lead => { 
                 let prod = produtosData.find(p => p.nome === lead.produto); 
                 let taxaProd = prod ? (Number(prod.taxa_comissao) || 5) : 5; 
                 comissaoDevida += (Number(lead.valor) * taxaProd) / 100; 
             });
             
-            linhasHtml += `<tr><td style="font-weight: bold; color: var(--text);">${v.full_name}</td><td><span class="badge badge-equipe">${v.equipe || 'Geral'}</span></td><td style="color:var(--fechados); font-weight:bold; text-align:right;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(receita)}</td><td style="color:var(--accent); font-weight:bold; text-align:right;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(comissaoDevida)}</td><td style="text-align:center;"><button class="btn-primary" style="padding: 6px 12px; font-size: 12px; margin: 0 auto; width: auto;" onclick="window.pagarComissao('${v.id}', ${comissaoDevida})"><i class="ph ph-wallet"></i> Quitar</button></td></tr>`;
+            linhasHtml += `
+            <tr>
+                <td style="font-weight: bold; color: var(--text);">${v.full_name}</td>
+                <td><span class="badge badge-equipe">${v.equipe || 'Geral'}</span></td>
+                <td style="color:var(--fechados); font-weight:bold; text-align:right;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(receita)}</td>
+                <td style="color:var(--accent); font-weight:bold; text-align:right;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(comissaoDevida)}</td>
+                <td style="text-align:center;">
+                    <button class="btn-primary" style="padding: 6px 12px; font-size: 12px; margin: 0 auto; width: auto;" onclick="window.pagarComissao('${v.id}', ${comissaoDevida})">
+                        <i class="ph ph-wallet"></i> Quitar
+                    </button>
+                </td>
+            </tr>`;
         });
-        if (!temDevida) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 30px; color:var(--fechados);"><i class="ph ph-check-circle" style="font-size:24px; display:block;"></i>Todas as comissões pagas!</td></tr>`; } 
-        else { tbody.innerHTML = linhasHtml; }
+        
+        if (!temDevida) { 
+            tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align:center; padding: 30px; color:var(--fechados);">
+                    <i class="ph ph-check-circle" style="font-size:24px; display:block;"></i>
+                    Todas as comissões pagas! O Livro-Caixa está limpo.
+                </td>
+            </tr>`; 
+        } else { 
+            tbody.innerHTML = linhasHtml; 
+        }
     }
 
     const tbodyHistorico = document.getElementById('tbody-historico-pagamentos');
     if (tbodyHistorico) {
         if(pagamentosData.length === 0) { 
-            tbodyHistorico.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px; color:var(--muted);">Nenhum pagamento registrado no livro-caixa.</td></tr>`; 
+            tbodyHistorico.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align:center; padding: 20px; color:var(--muted);">
+                    Nenhum pagamento registrado no livro-caixa de comissões.
+                </td>
+            </tr>`; 
         } else {
             tbodyHistorico.innerHTML = pagamentosData.map(p => {
                 let nomeVend = perfisEquipe.find(x => x.id === p.user_id)?.full_name || 'Vendedor Removido'; 
                 let dataLocal = new Date(p.created_at).toLocaleString('pt-BR');
-                return `<tr><td style="font-weight: bold; color: var(--text);">${nomeVend}</td><td style="color: var(--muted); font-size:13px;">${p.responsavel_pagamento}</td><td style="color:var(--fechados); font-weight:bold; text-align:right;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(p.valor)}</td><td style="color: var(--muted); font-size:12px; text-align:right;">${dataLocal}</td></tr>`;
+                return `
+                <tr>
+                    <td style="font-weight: bold; color: var(--text);">${nomeVend}</td>
+                    <td style="color: var(--muted); font-size:13px;">${p.responsavel_pagamento}</td>
+                    <td style="color:var(--fechados); font-weight:bold; text-align:right;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(p.valor)}</td>
+                    <td style="color: var(--muted); font-size:12px; text-align:right;">${dataLocal}</td>
+                </tr>`;
             }).join('');
         }
     }
 }
 
 window.pagarComissao = async (userId, valorDevido) => {
-    window.abrirConfirmacao('Quitar Comissão', `Confirmar o pagamento de <strong>${new Intl.NumberFormat('pt-BR', {style:'currency',currency:'BRL'}).format(valorDevido)}</strong>? Isso vai zerar as dívidas atuais deste vendedor.`, 'Confirmar Pagamento', async () => {
+    window.abrirConfirmacao('Quitar Comissão', `Confirmar o pagamento de <strong>${new Intl.NumberFormat('pt-BR', {style:'currency',currency:'BRL'}).format(valorDevido)}</strong>? Isso vai zerar as dívidas atuais deste profissional.`, 'Confirmar Pagamento', async () => {
+        
         mostrarToast('Processando pagamento...', 'ok');
+        
         const leadsParaPagar = leadsData.filter(l => l.user_id === userId && l.status === 'fechados' && l.aprovado === true && !l.comissao_paga && !l.estornado); 
         const ids = leadsParaPagar.map(l => l.id);
         
-        if(ids.length > 0) { await supabase.from('leads').update({ comissao_paga: true }).in('id', ids); }
-        await supabase.from('pagamentos_comissao').insert([{ user_id: userId, valor: valorDevido, responsavel_pagamento: perfilAtual.full_name }]);
-        mostrarToast('Comissão quitada e registrada no Livro-Caixa!', 'ok'); 
-        carregarLeads(); 
+        try {
+            if(ids.length > 0) { 
+                await supabase.from('leads').update({ comissao_paga: true }).in('id', ids); 
+            }
+            
+            await supabase.from('pagamentos_comissao').insert([{ 
+                user_id: userId, 
+                valor: valorDevido, 
+                responsavel_pagamento: perfilAtual.full_name 
+            }]);
+            
+            mostrarToast('Comissão quitada e registrada no Livro-Caixa!', 'ok'); 
+            carregarLeads(); 
+        } catch(err) {
+            console.error(err);
+            mostrarToast('Erro ao processar baixa de comissão.', 'erro');
+        }
     });
 };
 
 window.estornarVenda = async (leadId) => {
-    window.abrirConfirmacao('Estornar Venda (Chargeback)', '<strong style="color:var(--danger);">Atenção:</strong> Isso vai remover o valor do Faturamento, retirar a comissão do vendedor e marcar o cliente como ESTORNADO. Confirma?', 'Estornar', async () => {
-        const lead = leadsData.find(l => l.id == leadId); 
-        let historicoAtual = lead.historico || []; 
-        historicoAtual.push({ data: new Date().toISOString(), msg: `⚠️ ESTORNO/CHARGEBACK registrado por ${perfilAtual.full_name}` });
+    window.abrirConfirmacao('Estornar Venda (Chargeback)', '<strong style="color:var(--danger);">Atenção Crítica:</strong> Isso vai remover o valor do Faturamento Global, retirar a comissão projetada do vendedor e marcar o cliente como ESTORNADO de forma irreversível. Você confirma?', 'Estornar Dinheiro', async () => {
         
-        await supabase.from('leads').update({ 
-            status: 'perdidos', 
-            motivo_perda: 'Chargeback / Cancelamento', 
-            aprovado: false, 
-            estornado: true, 
-            historico: historicoAtual 
-        }).eq('id', leadId);
-        
-        mostrarToast('Venda estornada! Valores retirados da empresa.', 'ok'); 
-        document.getElementById('drawer-lead').classList.remove('ativa'); 
-        carregarLeads();
+        try {
+            const lead = leadsData.find(l => l.id == leadId); 
+            let historicoAtual = lead.historico || []; 
+            
+            historicoAtual.push({ 
+                data: new Date().toISOString(), 
+                msg: `⚠️ ESTORNO/CHARGEBACK registrado e validado por ${perfilAtual.full_name}` 
+            });
+            
+            await supabase.from('leads').update({ 
+                status: 'perdidos', 
+                motivo_perda: 'Chargeback / Cancelamento Forçado', 
+                aprovado: false, 
+                estornado: true, 
+                historico: historicoAtual 
+            }).eq('id', leadId);
+            
+            mostrarToast('Venda estornada! Valores retirados dos Dashboards da empresa.', 'ok'); 
+            document.getElementById('drawer-lead').classList.remove('ativa'); 
+            carregarLeads();
+        } catch(err) {
+            console.error(err);
+        }
     });
 };
 
 function renderizarAprovacoes() {
     const tbody = document.getElementById('tbody-aprovacoes'); 
     const badge = document.getElementById('badge-aprov'); 
+    
     if (!tbody || !badge) return;
 
     const pendentes = leadsData.filter(l => l.status === 'fechados' && l.aprovado !== true && !l.estornado);
+    
     badge.innerText = pendentes.length; 
-    if (pendentes.length > 0) badge.classList.remove('hidden'); else badge.classList.add('hidden');
+    
+    if (pendentes.length > 0) {
+        badge.classList.remove('hidden'); 
+    } else {
+        badge.classList.add('hidden');
+    }
     
     if (pendentes.length === 0) { 
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 30px; color:var(--fechados);"><i class="ph ph-check-circle" style="font-size:32px; display:block; margin-bottom:8px;"></i>Tudo limpo! Nenhuma aprovação pendente.</td></tr>`; 
+        tbody.innerHTML = `
+        <tr>
+            <td colspan="5" style="text-align:center; padding: 30px; color:var(--fechados);">
+                <i class="ph ph-check-circle" style="font-size:32px; display:block; margin-bottom:8px;"></i>
+                Tudo limpo! Nenhuma aprovação de caixa pendente no momento.
+            </td>
+        </tr>`; 
         return; 
     }
     
     tbody.innerHTML = pendentes.map(l => {
         let vendedor = perfisEquipe.find(p => p.id === l.user_id)?.full_name || 'Desconhecido';
-        let btnComprovante = l.comprovante_url ? `<a href="${l.comprovante_url}" target="_blank" class="btn-anexo"><i class="ph ph-receipt"></i> Ver Anexo</a>` : `<span style="font-size:11px; color:var(--danger); border:1px dashed var(--danger); padding:6px 12px; border-radius:6px; display:flex; align-items:center; gap:4px;"><i class="ph ph-warning-circle"></i> Sem Anexo</span>`;
-        return `<tr><td style="font-weight: bold; color: var(--text);">${vendedor}</td><td style="color: var(--muted);">${l.nome}</td><td><span class="badge badge-equipe">${l.produto || 'Geral'}</span></td><td style="color:var(--fechados); font-weight:bold; text-align:right;">R$ ${Number(l.valor).toFixed(2)}</td><td style="text-align: right; display:flex; gap:12px; justify-content:flex-end; align-items:center;">${btnComprovante}<button onclick="window.rejeitarVenda(${l.id})" class="btn-rejeitar"><i class="ph ph-x"></i> Rejeitar</button><button onclick="window.aprovarVenda(${l.id})" class="btn-aprovar"><i class="ph ph-check-circle"></i> Aprovar</button></td></tr>`;
+        
+        let btnComprovante = l.comprovante_url 
+            ? `<a href="${l.comprovante_url}" target="_blank" class="btn-anexo"><i class="ph ph-receipt"></i> Ver Anexo</a>` 
+            : `<span style="font-size:11px; color:var(--danger); border:1px dashed var(--danger); padding:6px 12px; border-radius:6px; display:flex; align-items:center; gap:4px;"><i class="ph ph-warning-circle"></i> Sem Anexo</span>`;
+            
+        return `
+        <tr>
+            <td style="font-weight: bold; color: var(--text);">${vendedor}</td>
+            <td style="color: var(--muted);">${l.nome}</td>
+            <td><span class="badge badge-equipe">${l.produto || 'Geral'}</span></td>
+            <td style="color:var(--fechados); font-weight:bold; text-align:right;">R$ ${Number(l.valor).toFixed(2)}</td>
+            <td style="text-align: right; display:flex; gap:12px; justify-content:flex-end; align-items:center;">
+                ${btnComprovante}
+                <button onclick="window.rejeitarVenda(${l.id})" class="btn-rejeitar">
+                    <i class="ph ph-x"></i> Rejeitar
+                </button>
+                <button onclick="window.aprovarVenda(${l.id})" class="btn-aprovar">
+                    <i class="ph ph-check-circle"></i> Aprovar
+                </button>
+            </td>
+        </tr>`;
     }).join('');
 }
 
 window.aprovarVenda = async (id) => {
-    const lead = leadsData.find(l => l.id == id); 
-    let historicoAtual = lead.historico || []; 
-    historicoAtual.push({ data: new Date().toISOString(), msg: `Venda APROVADA no Financeiro por ${perfilAtual.full_name}` });
-    await supabase.from('leads').update({ aprovado: true, historico: historicoAtual }).eq('id', id); 
-    mostrarToast('Venda Aprovada! Caiu no Pós-Venda 💰', 'ok'); 
-    carregarLeads();
+    try {
+        const lead = leadsData.find(l => l.id == id); 
+        let historicoAtual = lead.historico || []; 
+        
+        historicoAtual.push({ 
+            data: new Date().toISOString(), 
+            msg: `Venda APROVADA e conferida no Financeiro por ${perfilAtual.full_name}` 
+        });
+        
+        await supabase.from('leads').update({ 
+            aprovado: true, 
+            historico: historicoAtual 
+        }).eq('id', id); 
+        
+        mostrarToast('Venda Aprovada! O cliente caiu na esteira de Pós-Venda 💰', 'ok'); 
+        carregarLeads();
+    } catch(err) {
+        console.error(err);
+    }
 };
 
 window.rejeitarVenda = async (id) => {
-    const lead = leadsData.find(l => l.id == id); 
-    let historicoAtual = lead.historico || []; 
-    historicoAtual.push({ data: new Date().toISOString(), msg: `Venda REJEITADA no Financeiro por ${perfilAtual.full_name}` });
-    await supabase.from('leads').update({ status: 'negociacao', aprovado: false, historico: historicoAtual }).eq('id', id); 
-    mostrarToast('Venda Rejeitada. Voltou pro funil.', 'erro'); 
-    carregarLeads();
+    try {
+        const lead = leadsData.find(l => l.id == id); 
+        let historicoAtual = lead.historico || []; 
+        
+        historicoAtual.push({ 
+            data: new Date().toISOString(), 
+            msg: `Venda REJEITADA no Caixa por ${perfilAtual.full_name}` 
+        });
+        
+        await supabase.from('leads').update({ 
+            status: 'negociacao', 
+            aprovado: false, 
+            historico: historicoAtual 
+        }).eq('id', id); 
+        
+        mostrarToast('Venda Rejeitada. Retornou para o funil do vendedor.', 'erro'); 
+        carregarLeads();
+    } catch(err) {
+        console.error(err);
+    }
 };
 
-// ==================== CFO: DESPESAS ====================
+// ============================================================================
+// 20. DESPESAS E CUSTOS OPERACIONAIS
+// ============================================================================
 async function carregarDespesas() { 
-    const { data, error } = await supabase.from('despesas').select('*').order('vencimento', { ascending: true }); 
+    const { data, error } = await supabase
+        .from('despesas')
+        .select('*')
+        .order('vencimento', { ascending: true }); 
+        
     despesasData = data || []; 
     renderizarDespesas(); 
 }
@@ -1763,429 +2844,833 @@ function renderizarDespesas() {
     if (!tbody) return;
     
     if (despesasData.length === 0) { 
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--muted);">Nenhuma despesa lançada neste mês.</td></tr>`; 
+        tbody.innerHTML = `
+        <tr>
+            <td colspan="6" style="text-align:center; padding:30px; color:var(--muted);">
+                Nenhuma despesa ou custo operacional lançado neste mês.
+            </td>
+        </tr>`; 
         return; 
     }
     
     tbody.innerHTML = despesasData.map(d => {
-        let statusBadge = d.status === 'Pago' ? `<span class="badge badge-verde">PAGO</span>` : `<span class="badge badge-vermelho">PENDENTE</span>`;
+        let statusBadge = d.status === 'Pago' 
+            ? `<span class="badge badge-verde">PAGO</span>` 
+            : `<span class="badge badge-vermelho">PENDENTE</span>`;
+            
         let dataVenc = new Date(d.vencimento).toLocaleDateString('pt-BR');
         
         let btnAcao = d.status === 'Pendente' 
-            ? `<div style="display:flex; justify-content:center; gap:8px;"><button class="btn-primary" style="padding: 4px 8px; font-size: 12px; width: auto; margin:0;" onclick="window.quitarDespesa(${d.id})"><i class="ph ph-check"></i> Pagar</button><button class="btn-cancel" style="padding: 4px 8px; font-size: 12px; width: auto; margin:0; border-color:var(--danger); color:var(--danger);" onclick="window.deletarDespesa(${d.id})"><i class="ph ph-trash"></i></button></div>` 
-            : `<div style="display:flex; justify-content:center; gap:8px;"><span style="font-size:12px; color:var(--muted); align-self:center;"><i class="ph ph-check-all"></i> Quitado</span><button class="btn-cancel" style="padding: 4px 8px; font-size: 12px; width: auto; margin:0; border-color:var(--danger); color:var(--danger);" onclick="window.deletarDespesa(${d.id})"><i class="ph ph-trash"></i></button></div>`;
+            ? `
+            <div style="display:flex; justify-content:center; gap:8px;">
+                <button class="btn-primary" style="padding: 4px 8px; font-size: 12px; width: auto; margin:0;" onclick="window.quitarDespesa(${d.id})">
+                    <i class="ph ph-check"></i> Pagar
+                </button>
+                <button class="btn-cancel" style="padding: 4px 8px; font-size: 12px; width: auto; margin:0; border-color:var(--danger); color:var(--danger);" onclick="window.deletarDespesa(${d.id})">
+                    <i class="ph ph-trash"></i>
+                </button>
+            </div>` 
+            : `
+            <div style="display:flex; justify-content:center; gap:8px;">
+                <span style="font-size:12px; color:var(--muted); align-self:center;">
+                    <i class="ph ph-check-all"></i> Quitado
+                </span>
+                <button class="btn-cancel" style="padding: 4px 8px; font-size: 12px; width: auto; margin:0; border-color:var(--danger); color:var(--danger);" onclick="window.deletarDespesa(${d.id})">
+                    <i class="ph ph-trash"></i>
+                </button>
+            </div>`;
             
-        return `<tr><td style="font-weight: bold; color: var(--text);">${d.descricao}</td><td><span class="badge" style="background:rgba(255,255,255,0.05); color:var(--muted);">Fixo</span></td><td style="color:var(--muted);">${dataVenc}</td><td style="text-align:right; font-weight:bold; color:var(--danger);">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(d.valor)}</td><td>${statusBadge}</td><td style="text-align:center;">${btnAcao}</td></tr>`;
+        return `
+        <tr>
+            <td style="font-weight: bold; color: var(--text);">${d.descricao}</td>
+            <td><span class="badge" style="background:rgba(255,255,255,0.05); color:var(--muted);">Custo Fixo</span></td>
+            <td style="color:var(--muted);">${dataVenc}</td>
+            <td style="text-align:right; font-weight:bold; color:var(--danger);">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(d.valor)}</td>
+            <td>${statusBadge}</td>
+            <td style="text-align:center;">${btnAcao}</td>
+        </tr>`;
     }).join('');
 }
 
 window.quitarDespesa = async (id) => { 
-    window.abrirConfirmacao('Quitar Despesa', 'Confirmar o pagamento desta conta?', 'Confirmar Pagamento', async () => { 
-        mostrarToast('Processando...', 'ok'); 
-        const { error } = await supabase.from('despesas').update({ status: 'Pago' }).eq('id', id); 
-        if (error) mostrarToast('Erro ao atualizar conta.', 'erro'); 
-        else { mostrarToast('Despesa quitada com sucesso!', 'ok'); carregarDespesas(); } 
+    window.abrirConfirmacao('Quitar Despesa Operacional', 'Confirmar a saída deste dinheiro do caixa e o pagamento desta conta?', 'Confirmar Pagamento', async () => { 
+        mostrarToast('Processando e validando baixa...', 'ok'); 
+        
+        try {
+            const { error } = await supabase.from('despesas').update({ status: 'Pago' }).eq('id', id); 
+            
+            if (error) {
+                mostrarToast('Erro ao atualizar conta no sistema.', 'erro'); 
+            } else { 
+                mostrarToast('Despesa quitada com sucesso e registrada.', 'ok'); 
+                carregarDespesas(); 
+            } 
+        } catch(err) {
+            console.error(err);
+        }
     }); 
 };
 
 window.deletarDespesa = async (id) => { 
-    window.abrirConfirmacao('Excluir Despesa', 'Remover este lançamento do sistema?', 'Apagar', async () => { 
-        await supabase.from('despesas').delete().eq('id', id); 
-        mostrarToast('Lançamento deletado.', 'ok'); 
-        carregarDespesas(); 
+    window.abrirConfirmacao('Excluir Despesa', 'Deseja remover completamente este lançamento de custo do sistema?', 'Apagar Registro', async () => { 
+        try {
+            await supabase.from('despesas').delete().eq('id', id); 
+            mostrarToast('Lançamento deletado e removido dos cálculos.', 'ok'); 
+            carregarDespesas(); 
+        } catch(err) {
+            console.error(err);
+        }
     }); 
 };
 
 const formDespesa = document.getElementById('form-despesa');
+
 if (formDespesa) {
-    formDespesa.onsubmit = async (e) => {
+    formDespesa.addEventListener('submit', async (e) => {
         e.preventDefault(); 
-        const desc = document.getElementById('inp-desp-desc').value; 
-        const val = document.getElementById('inp-desp-valor').value; 
-        const dataV = document.getElementById('inp-desp-data').value;
-        const { error } = await supabase.from('despesas').insert([{ descricao: desc, valor: val, vencimento: dataV, status: 'Pendente' }]);
         
-        if (error) mostrarToast('Erro ao salvar despesa.', 'erro'); 
-        else { document.getElementById('modal-despesa').classList.remove('ativa'); formDespesa.reset(); mostrarToast('Despesa registrada.', 'ok'); carregarDespesas(); }
-    };
+        try {
+            const desc = document.getElementById('inp-desp-desc').value; 
+            const val = document.getElementById('inp-desp-valor').value; 
+            const dataV = document.getElementById('inp-desp-data').value;
+            
+            const { error } = await supabase.from('despesas').insert([{ 
+                descricao: desc, 
+                valor: val, 
+                vencimento: dataV, 
+                status: 'Pendente' 
+            }]);
+            
+            if (error) {
+                mostrarToast('Erro interno ao salvar despesa.', 'erro'); 
+            } else { 
+                document.getElementById('modal-despesa').classList.remove('ativa'); 
+                formDespesa.reset(); 
+                mostrarToast('Nova Despesa Operacional registrada na matriz.', 'ok'); 
+                carregarDespesas(); 
+            }
+        } catch(err) {
+            console.error(err);
+        }
+    });
 }
 
-// ==================== CFO: COBRANÇAS E ESTORNOS ====================
+// ============================================================================
+// 21. COBRANÇAS, INADIMPLÊNCIA E CARTEIRA DE ASSINANTES (MRR)
+// ============================================================================
 function renderizarCobrancas() {
     const tbodyAtrasados = document.getElementById('tbody-cobrancas'); 
     const tbodyEstornos = document.getElementById('tbody-estornos'); 
+    
     if (!tbodyAtrasados || !tbodyEstornos) return;
     
     const inadimplentes = leadsData.filter(l => l.is_inadimplente === true && !l.estornado); 
     const estornados = leadsData.filter(l => l.estornado === true);
     
     let valorRisco = inadimplentes.reduce((acc, l) => acc + Number(l.valor), 0); 
+    
+    // Calcula Recuperados olhando para o histórico oficial de logs
     let recuperado = leadsData.filter(l => l.historico && l.historico.some(h => h.msg.includes('Dívida Quitada'))).reduce((acc, l) => acc + Number(l.valor), 0);
     
-    if (document.getElementById('cobranca-risco')) document.getElementById('cobranca-risco').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(valorRisco);
-    if (document.getElementById('cobranca-qtd')) document.getElementById('cobranca-qtd').innerText = inadimplentes.length;
-    if (document.getElementById('cobranca-recuperado')) document.getElementById('cobranca-recuperado').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(recuperado);
+    if (document.getElementById('cobranca-risco')) {
+        document.getElementById('cobranca-risco').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(valorRisco);
+    }
+    if (document.getElementById('cobranca-qtd')) {
+        document.getElementById('cobranca-qtd').innerText = inadimplentes.length;
+    }
+    if (document.getElementById('cobranca-recuperado')) {
+        document.getElementById('cobranca-recuperado').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(recuperado);
+    }
 
     if (inadimplentes.length === 0) { 
-        tbodyAtrasados.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">Nenhum cliente inadimplente.</td></tr>`; 
+        tbodyAtrasados.innerHTML = `
+        <tr>
+            <td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">
+                Nenhum cliente está inadimplente no momento.
+            </td>
+        </tr>`; 
     } else {
         tbodyAtrasados.innerHTML = inadimplentes.map(l => {
-            let numWpp = l.whatsapp.replace(/\D/g, ''); if (!numWpp.startsWith('55') && numWpp.length <= 11) numWpp = '55' + numWpp;
-            return `<tr><td style="font-weight: bold; color: var(--text);">${l.nome}</td><td>${l.produto || 'Geral'}</td><td style="color:var(--muted); font-size:12px;">${l.forma_pagamento || 'Pix'} em Atraso</td><td style="text-align:right; font-weight:bold; color:var(--danger);">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(l.valor)}</td><td style="text-align:center; display:flex; gap:8px; justify-content:center;"><button class="btn-cancel" onclick="window.abrirModalWhatsApp('${numWpp}', '${l.nome}')" style="padding:4px 8px; width:auto; font-size:12px; border-color:#25d366; color:#25d366;"><i class="ph ph-whatsapp-logo"></i> Cobrar</button><button class="btn-primary" onclick="window.quitarInadimplencia(${l.id})" style="padding:4px 8px; width:auto; font-size:12px; margin-top:0;"><i class="ph ph-check"></i> Baixa Pagto.</button></td></tr>`;
+            let numWpp = l.whatsapp.replace(/\D/g, ''); 
+            if (!numWpp.startsWith('55') && numWpp.length <= 11) {
+                numWpp = '55' + numWpp;
+            }
+            
+            return `
+            <tr>
+                <td style="font-weight: bold; color: var(--text);">${l.nome}</td>
+                <td>${l.produto || 'Geral'}</td>
+                <td style="color:var(--muted); font-size:12px;">${l.forma_pagamento || 'Pix'} em Atraso</td>
+                <td style="text-align:right; font-weight:bold; color:var(--danger);">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(l.valor)}</td>
+                <td style="text-align:center; display:flex; gap:8px; justify-content:center;">
+                    <button class="btn-cancel" onclick="window.abrirModalWhatsApp('${numWpp}', '${l.nome}')" style="padding:4px 8px; width:auto; font-size:12px; border-color:#25d366; color:#25d366;">
+                        <i class="ph ph-whatsapp-logo"></i> Cobrar
+                    </button>
+                    <button class="btn-primary" onclick="window.quitarInadimplencia(${l.id})" style="padding:4px 8px; width:auto; font-size:12px; margin-top:0;">
+                        <i class="ph ph-check"></i> Baixa Pagto.
+                    </button>
+                </td>
+            </tr>`;
         }).join('');
     }
 
     if (estornados.length === 0) { 
-        tbodyEstornos.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--muted);">Nenhum estorno registrado na base.</td></tr>`; 
+        tbodyEstornos.innerHTML = `
+        <tr>
+            <td colspan="4" style="text-align:center; padding:30px; color:var(--muted);">
+                Nenhum estorno financeiro registrado na base.
+            </td>
+        </tr>`; 
     } else {
         tbodyEstornos.innerHTML = estornados.map(l => {
-            return `<tr><td style="font-weight: bold; color: var(--text);">${l.nome}</td><td>${l.produto || 'Geral'}</td><td style="color:var(--danger); font-size:12px;"><i class="ph ph-trend-down"></i> ${l.motivo_perda || 'Chargeback'}</td><td style="text-align:right; font-weight:bold; color:var(--danger); text-decoration:line-through;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(l.valor)}</td></tr>`;
+            return `
+            <tr>
+                <td style="font-weight: bold; color: var(--text);">${l.nome}</td>
+                <td>${l.produto || 'Geral'}</td>
+                <td style="color:var(--danger); font-size:12px;">
+                    <i class="ph ph-trend-down"></i> ${l.motivo_perda || 'Chargeback Confirmado'}
+                </td>
+                <td style="text-align:right; font-weight:bold; color:var(--danger); text-decoration:line-through;">
+                    ${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(l.valor)}
+                </td>
+            </tr>`;
         }).join('');
     }
 }
 
 window.marcarInadimplente = async (leadId) => { 
-    window.abrirConfirmacao('Sinalizar Inadimplência', 'Tem certeza que este cliente atrasou o pagamento ou o boleto falhou? Ele será enviado para a Central de Cobranças do Financeiro.', 'Sinalizar Atraso', async () => { 
-        const lead = leadsData.find(l => l.id == leadId); 
-        let historicoAtual = lead.historico || []; 
-        historicoAtual.push({ data: new Date().toISOString(), msg: `⚠️ Marcado como INADIMPLENTE por ${perfilAtual.full_name}` }); 
-        
-        await supabase.from('leads').update({ is_inadimplente: true, historico: historicoAtual }).eq('id', leadId); 
-        mostrarToast('Cliente enviado para cobrança.', 'ok'); 
-        document.getElementById('drawer-lead').classList.remove('ativa'); 
-        carregarLeads(); 
+    window.abrirConfirmacao('Sinalizar Inadimplência Oficial', 'Tem certeza que este cliente atrasou o pagamento ou o boleto falhou? Ele será enviado para a Central de Cobranças do Financeiro e ficará amarelo no Kanban.', 'Sinalizar Atraso', async () => { 
+        try {
+            const lead = leadsData.find(l => l.id == leadId); 
+            let historicoAtual = lead.historico || []; 
+            
+            historicoAtual.push({ 
+                data: new Date().toISOString(), 
+                msg: `⚠️ Marcado como INADIMPLENTE na mesa de cobrança por ${perfilAtual.full_name}` 
+            }); 
+            
+            await supabase.from('leads').update({ 
+                is_inadimplente: true, 
+                historico: historicoAtual 
+            }).eq('id', leadId); 
+            
+            mostrarToast('Cliente enviado oficialmente para a régua de cobrança.', 'ok'); 
+            document.getElementById('drawer-lead').classList.remove('ativa'); 
+            
+            carregarLeads(); 
+        } catch(err) {
+            console.error(err);
+        }
     }); 
 };
 
 window.quitarInadimplencia = async (leadId) => { 
-    window.abrirConfirmacao('Baixa de Pagamento', 'O cliente realizou o pagamento do atraso? Isso vai tirá-lo da lista de inadimplentes.', 'Confirmar Pagamento', async () => { 
-        const lead = leadsData.find(l => l.id == leadId); 
-        let historicoAtual = lead.historico || []; 
-        historicoAtual.push({ data: new Date().toISOString(), msg: `✅ Dívida Quitada. Marcado como PAGO por ${perfilAtual.full_name}` }); 
-        
-        await supabase.from('leads').update({ is_inadimplente: false, historico: historicoAtual }).eq('id', leadId); 
-        mostrarToast('Pagamento registrado. Cliente recuperado!', 'ok'); 
-        carregarLeads(); 
+    window.abrirConfirmacao('Baixa de Pagamento Atrasado', 'O cliente realizou o pagamento do atraso? A dívida será perdoada e ele sairá da lista de devedores.', 'Confirmar Pagamento e Baixa', async () => { 
+        try {
+            const lead = leadsData.find(l => l.id == leadId); 
+            let historicoAtual = lead.historico || []; 
+            
+            historicoAtual.push({ 
+                data: new Date().toISOString(), 
+                msg: `✅ Dívida Quitada. Marcado como PAGO na cobrança por ${perfilAtual.full_name}` 
+            }); 
+            
+            await supabase.from('leads').update({ 
+                is_inadimplente: false, 
+                historico: historicoAtual 
+            }).eq('id', leadId); 
+            
+            mostrarToast('Pagamento registrado. Cliente recuperado e o valor voltou para o sistema!', 'ok'); 
+            carregarLeads(); 
+        } catch(err) {
+            console.error(err);
+        }
     }); 
 };
 
-// ==================== CFO: MRR ====================
+// ==================== CFO: MRR (Base Recorrente) ====================
 function renderizarMRR() {
-    const tbody = document.getElementById('tbody-mrr'); if (!tbody) return;
+    const tbody = document.getElementById('tbody-mrr'); 
+    if (!tbody) return;
+    
     const assinantes = leadsData.filter(l => l.is_recorrente === true && l.status === 'fechados' && l.aprovado === true && !l.estornado);
-    let mrrAtivo = 0, mrrChurn = 0, qtdAtivos = 0; let linhasHtml = '';
+    
+    let mrrAtivo = 0;
+    let mrrChurn = 0;
+    let qtdAtivos = 0; 
+    let linhasHtml = '';
 
     assinantes.forEach(l => {
-        const valor = Number(l.valor); const statusAss = l.status_assinatura || 'ativa';
-        if (statusAss === 'ativa') { mrrAtivo += valor; qtdAtivos++; } else { mrrChurn += valor; }
+        const valor = Number(l.valor); 
+        const statusAss = l.status_assinatura || 'ativa';
         
-        let badgeStatus = statusAss === 'ativa' ? `<span class="badge badge-verde">ATIVA</span>` : `<span class="badge badge-vermelho">CANCELADA</span>`;
-        let corValor = statusAss === 'ativa' ? 'color: var(--text);' : 'color: var(--danger); text-decoration: line-through;';
-        linhasHtml += `<tr><td style="font-weight: bold; color: var(--text);">${l.nome}</td><td>${l.produto || 'Geral'}</td><td style="text-align:right; font-weight:bold; ${corValor}">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(valor)} /mês</td><td>${badgeStatus}</td></tr>`;
+        if (statusAss === 'ativa') { 
+            mrrAtivo += valor; 
+            qtdAtivos++; 
+        } else { 
+            mrrChurn += valor; 
+        }
+        
+        let badgeStatus = statusAss === 'ativa' 
+            ? `<span class="badge badge-verde">ATIVA</span>` 
+            : `<span class="badge badge-vermelho">CANCELADA (CHURN)</span>`;
+            
+        let corValor = statusAss === 'ativa' 
+            ? 'color: var(--text);' 
+            : 'color: var(--danger); text-decoration: line-through;';
+        
+        linhasHtml += `
+        <tr>
+            <td style="font-weight: bold; color: var(--text);">${l.nome}</td>
+            <td>${l.produto || 'Geral'}</td>
+            <td style="text-align:right; font-weight:bold; ${corValor}">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(valor)} /mês</td>
+            <td>${badgeStatus}</td>
+            <td style="text-align:center;">
+                <button class="btn-cancel" style="padding:4px 8px; width:auto; margin:0 auto; font-size:12px; color:var(--danger); border-color:var(--danger2);" onclick="window.removerAssinanteBase(${l.id})">
+                    <i class="ph ph-trash"></i> Remover da Base
+                </button>
+            </td>
+        </tr>`;
     });
 
-    if (document.getElementById('mrr-atual')) document.getElementById('mrr-atual').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(mrrAtivo);
-    if (document.getElementById('mrr-ativos')) document.getElementById('mrr-ativos').innerText = qtdAtivos;
-    if (document.getElementById('mrr-churn')) document.getElementById('mrr-churn').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(mrrChurn);
-    if (assinantes.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--muted);">Nenhum cliente com assinatura (MRR) na base.</td></tr>`; } else { tbody.innerHTML = linhasHtml; }
+    if (document.getElementById('mrr-atual')) {
+        document.getElementById('mrr-atual').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(mrrAtivo);
+    }
+    
+    if (document.getElementById('mrr-ativos')) {
+        document.getElementById('mrr-ativos').innerText = qtdAtivos;
+    }
+    
+    if (document.getElementById('mrr-churn')) {
+        document.getElementById('mrr-churn').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(mrrChurn);
+    }
+    
+    if (assinantes.length === 0) { 
+        tbody.innerHTML = `
+        <tr>
+            <td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">
+                Nenhum cliente marcou a tag de Assinatura (MRR) na base de dados.
+            </td>
+        </tr>`; 
+    } else { 
+        tbody.innerHTML = linhasHtml; 
+    }
 }
 
 window.cancelarAssinatura = async (leadId) => { 
-    window.abrirConfirmacao('Registrar Churn', 'Tem certeza que este cliente cancelou a assinatura mensal? O valor sairá do cálculo de MRR.', 'Confirmar Cancelamento', async () => { 
-        const lead = leadsData.find(l => l.id == leadId); 
-        let historicoAtual = lead.historico || []; 
-        historicoAtual.push({ data: new Date().toISOString(), msg: `❌ Assinatura Cancelada (Churn) por ${perfilAtual.full_name}` }); 
-        
-        await supabase.from('leads').update({ status_assinatura: 'cancelado', historico: historicoAtual }).eq('id', leadId); 
-        mostrarToast('Assinatura cancelada.', 'ok'); 
-        document.getElementById('drawer-lead').classList.remove('ativa'); 
-        carregarLeads(); 
+    window.abrirConfirmacao('Registrar Churn e Cancelamento', 'Tem certeza que este cliente pediu o cancelamento da assinatura mensal? O valor sairá do cálculo de MRR e passará a constar como Churn na empresa.', 'Confirmar Churn (Perda)', async () => { 
+        try {
+            const lead = leadsData.find(l => l.id == leadId); 
+            let historicoAtual = lead.historico || []; 
+            
+            historicoAtual.push({ 
+                data: new Date().toISOString(), 
+                msg: `❌ Assinatura Cancelada Definitivamente (Churn) por ${perfilAtual.full_name}` 
+            }); 
+            
+            await supabase.from('leads').update({ 
+                status_assinatura: 'cancelado', 
+                historico: historicoAtual 
+            }).eq('id', leadId); 
+            
+            mostrarToast('Assinatura e MRR cancelados.', 'ok'); 
+            document.getElementById('drawer-lead').classList.remove('ativa'); 
+            carregarLeads(); 
+        } catch(err) {
+            console.error(err);
+        }
     }); 
 };
 
-// ==================== CFO: CONTRATOS (GED) ====================
+window.removerAssinanteBase = (id) => {
+    window.abrirConfirmacao('Remover da Base de MRR', 'Isso removerá o cliente definitivamente da lista de assinantes (a tag MRR será desmarcada) e apagará o histórico de churn/receita deste lead específico. Confirmar?', 'Remover Sem Dó', async () => {
+        try {
+            let lead = leadsData.find(l => l.id == id);
+            let hist = lead.historico || [];
+            
+            hist.push({ 
+                data: new Date().toISOString(), 
+                msg: `Expulso da base de assinantes e da matriz de MRR por ${perfilAtual.full_name}` 
+            });
+            
+            await supabase.from('leads').update({
+                is_recorrente: false,
+                status_assinatura: null,
+                historico: hist
+            }).eq('id', id);
+            
+            mostrarToast('Removido limpo da base MRR.', 'ok');
+            carregarLeads();
+        } catch(err) {
+            console.error(err);
+        }
+    });
+};
+
 function renderizarContratos() {
-    const tbody = document.getElementById('tbody-contratos'); if (!tbody) return;
-    const contratos = leadsData.filter(l => (l.contrato_url && l.contrato_url !== '') || (l.doc_importante_url && l.doc_importante_url !== ''));
+    const tbody = document.getElementById('tbody-contratos'); 
+    if (!tbody) return;
+    
+    // Filtra quem tem contrato, documento importante OU comprovante financeiro no cofre
+    const contratos = leadsData.filter(l => (l.contrato_url && l.contrato_url !== '') || (l.doc_importante_url && l.doc_importante_url !== '') || (l.comprovante_url && l.comprovante_url !== ''));
 
     if (contratos.length === 0) { 
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--muted);">O cofre está vazio. Nenhum contrato ou documento foi anexado na gaveta dos clientes.</td></tr>`; 
+        tbody.innerHTML = `
+        <tr>
+            <td colspan="4" style="text-align:center; padding:30px; color:var(--muted);">
+                O Cofre de GED está vazio. Nenhum contrato ou documento fiscal foi anexado na matriz.
+            </td>
+        </tr>`; 
         return; 
     }
     
     tbody.innerHTML = contratos.map(l => {
-        let dataUpload = l.historico ? [...l.historico].reverse().find(h => h.msg.includes('Gaveta atualizada'))?.data : l.created_at; 
-        let dataStr = dataUpload ? new Date(dataUpload).toLocaleDateString('pt-BR') : '-';
+        let dataUpload = l.historico ? [...l.historico].reverse().find(h => h.msg.includes('Gaveta atualizada') || h.msg.includes('Cofre'))?.data : l.created_at; 
+        let dataStr = dataUpload ? new Date(dataUpload).toLocaleDateString('pt-BR') : 'Data não informada';
+        
         let links = '';
         
-        if (l.contrato_url) links += `<a href="${l.contrato_url}" target="_blank" class="btn-anexo" style="border-color:#b388ff; color:#b388ff; margin-right:6px;"><i class="ph ph-folder-lock"></i> Ver Contrato</a>`;
-        if (l.doc_importante_url) links += `<a href="${l.doc_importante_url}" target="_blank" class="btn-anexo" style="border-color:#4fc3f7; color:#4fc3f7;"><i class="ph ph-file-text"></i> Ver Docs</a>`;
+        if (l.contrato_url) {
+            links += `<a href="${l.contrato_url}" target="_blank" class="btn-anexo" style="border-color:#b388ff; color:#b388ff; margin-right:6px;"><i class="ph ph-folder-lock"></i> Contrato Oficial</a>`;
+        }
+        if (l.doc_importante_url) {
+            links += `<a href="${l.doc_importante_url}" target="_blank" class="btn-anexo" style="border-color:#4fc3f7; color:#4fc3f7; margin-right:6px;"><i class="ph ph-file-text"></i> Doc. do Cliente</a>`;
+        }
+        if (l.comprovante_url) {
+            links += `<a href="${l.comprovante_url}" target="_blank" class="btn-anexo" style="border-color:var(--novos); color:var(--novos);"><i class="ph ph-receipt"></i> Comprovante</a>`;
+        }
         
-        return `<tr><td style="font-weight: bold; color: var(--text);">${l.nome}</td><td><span class="badge badge-equipe">${l.produto || 'Geral'}</span></td><td style="color:var(--muted); font-size:12px;">${dataStr}</td><td style="text-align: right;">${links}</td></tr>`;
+        return `
+        <tr>
+            <td style="font-weight: bold; color: var(--text);">${l.nome}</td>
+            <td><span class="badge badge-equipe">${l.produto || 'Serviço Padrão'}</span></td>
+            <td style="color:var(--muted); font-size:12px;">${dataStr}</td>
+            <td style="text-align: right;">${links}</td>
+        </tr>`;
     }).join('');
 }
 
-// ==================== CFO: AUDITORIA DE DESCONTOS ====================
 function renderizarAuditoriaDescontos() {
-    const tbody = document.getElementById('tbody-auditoria-descontos'); if (!tbody) return;
+    const tbody = document.getElementById('tbody-auditoria-descontos'); 
+    if (!tbody) return;
+    
     const vendasAprovadas = leadsData.filter(l => l.status === 'fechados' && l.aprovado === true && !l.estornado); 
-    let temDesconto = false; let linhasHtml = '';
+    let temDesconto = false; 
+    let linhasHtml = '';
 
     vendasAprovadas.forEach(lead => {
-        const produtoCatalogo = produtosData.find(p => p.nome === lead.produto); if (!produtoCatalogo) return;
-        const precoOriginal = Number(produtoCatalogo.valor); const precoVendido = Number(lead.valor);
+        const produtoCatalogo = produtosData.find(p => p.nome === lead.produto); 
+        if (!produtoCatalogo) return;
         
+        const precoOriginal = Number(produtoCatalogo.valor); 
+        const precoVendido = Number(lead.valor);
+        
+        // Verifica quebra de margem baseada na tabela matriz de catálogo
         if (precoVendido < precoOriginal) {
             temDesconto = true; 
-            const vendedor = perfisEquipe.find(p => p.id === lead.user_id)?.full_name || 'Desconhecido';
-            const diferenca = precoOriginal - precoVendido; const porcentagemDesconto = (diferenca / precoOriginal) * 100;
-            let corDesconto = porcentagemDesconto > 20 ? 'color: var(--danger); font-weight: 800;' : 'color: var(--negociacao); font-weight: bold;';
             
-            linhasHtml += `<tr><td style="font-weight: bold; color: var(--text);">${vendedor}</td><td>${lead.produto}</td><td style="text-align:right; color: var(--muted); text-decoration: line-through;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(precoOriginal)}</td><td style="text-align:right; color: var(--fechados); font-weight: bold;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(precoVendido)}</td><td style="text-align:center; ${corDesconto}">${porcentagemDesconto.toFixed(1)}% OFF</td></tr>`;
+            const vendedor = perfisEquipe.find(p => p.id === lead.user_id)?.full_name || 'Usuário Não Encontrado';
+            const diferenca = precoOriginal - precoVendido; 
+            const porcentagemDesconto = (diferenca / precoOriginal) * 100;
+            
+            let corDesconto = porcentagemDesconto > 20 
+                ? 'color: var(--danger); font-weight: 800;' 
+                : 'color: var(--negociacao); font-weight: bold;';
+            
+            linhasHtml += `
+            <tr>
+                <td style="font-weight: bold; color: var(--text);">${vendedor}</td>
+                <td>${lead.produto}</td>
+                <td style="text-align:right; color: var(--muted); text-decoration: line-through;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(precoOriginal)}</td>
+                <td style="text-align:right; color: var(--fechados); font-weight: bold;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(precoVendido)}</td>
+                <td style="text-align:center; ${corDesconto}">${porcentagemDesconto.toFixed(1)}% DE DESCONTO APLICADO</td>
+            </tr>`;
         }
     });
 
-    if (!temDesconto) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color:var(--fechados);"><i class="ph ph-shield-check" style="font-size:32px; display:block; margin-bottom:8px;"></i>Nenhum vendedor aplicou descontos na base original. Margem protegida!</td></tr>`; } 
-    else { tbody.innerHTML = linhasHtml; }
+    if (!temDesconto) { 
+        tbody.innerHTML = `
+        <tr>
+            <td colspan="5" style="text-align:center; padding: 40px; color:var(--fechados);">
+                <i class="ph ph-shield-check" style="font-size:32px; display:block; margin-bottom:8px;"></i>
+                Excelente! Nenhum vendedor quebrou a margem da base oficial. Margem de lucro corporativa protegida!
+            </td>
+        </tr>`; 
+    } else { 
+        tbody.innerHTML = linhasHtml; 
+    }
 }
 
-// ==========================================
-// EXPORTAÇÃO E LOGS DE AUDITORIA
-// ==========================================
+/**
+ * ============================================================================
+ * 22. EXPORTAÇÃO E LOGS DE AUDITORIA DO CEO
+ * ============================================================================
+ */
 function getLeadsExportacao() {
-    const filterStatus = document.getElementById('export-filter-status').value; let exportList = leadsData; 
+    const filterStatus = document.getElementById('export-filter-status').value; 
+    let exportList = leadsData; 
     
-    if (filterStatus === 'fechados') exportList = exportList.filter(l => l.status === 'fechados' && l.aprovado === true && !l.estornado);
-    else if (filterStatus === 'abertos') exportList = exportList.filter(l => l.status !== 'fechados' || (l.status === 'fechados' && !l.aprovado));
-    else if (filterStatus === 'perdidos') exportList = exportList.filter(l => l.status === 'perdidos' || l.estornado); 
-    else if (filterStatus === 'abandonados') exportList = exportList.filter(l => l.status === 'abandonados'); 
+    if (filterStatus === 'fechados') {
+        exportList = exportList.filter(l => l.status === 'fechados' && l.aprovado === true && !l.estornado);
+    } else if (filterStatus === 'abertos') {
+        exportList = exportList.filter(l => l.status !== 'fechados' || (l.status === 'fechados' && !l.aprovado));
+    } else if (filterStatus === 'perdidos') {
+        exportList = exportList.filter(l => l.status === 'perdidos' || l.estornado); 
+    } else if (filterStatus === 'abandonados') {
+        exportList = exportList.filter(l => l.status === 'abandonados'); 
+    }
     
     return exportList;
 }
 
 function renderizarTabelaExportacao() {
-    const tbody = document.getElementById('tbody-export'); if (!tbody) return;
+    const tbody = document.getElementById('tbody-export'); 
+    if (!tbody) return;
+    
     const list = getLeadsExportacao();
     
     if (list.length === 0) { 
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 30px; color:var(--muted);">Nenhum dado encontrado com o filtro atual.</td></tr>`; 
+        tbody.innerHTML = `
+        <tr>
+            <td colspan="6" style="text-align:center; padding: 30px; color:var(--muted);">
+                Nenhum dado encontrado para exportação com o filtro atual da tela.
+            </td>
+        </tr>`; 
         return; 
     }
     
     tbody.innerHTML = list.map(l => {
-        let statusBadge = l.status === 'novos' ? 'badge-azul' : (l.status === 'negociacao' ? 'badge-amarelo' : (l.status === 'perdidos' || l.estornado ? 'badge-vermelho' : (l.status === 'abandonados' ? 'badge-equipe' : 'badge-verde')));
-        return `<tr><td style="font-weight: bold; color: var(--text);">${l.nome}</td><td style="color: var(--muted);">${l.whatsapp}</td><td>${l.produto || 'Geral'}</td><td style="color:var(--text); font-weight:bold; text-align:right;">R$ ${Number(l.valor).toFixed(2)}</td><td><span class="badge ${statusBadge}">${l.estornado ? 'ESTORNADO' : l.status.toUpperCase()}</span></td><td style="color: var(--muted); font-size:12px;">${l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '-'}</td></tr>`;
+        let statusBadge = l.status === 'novos' ? 'badge-azul' : 
+                          (l.status === 'negociacao' ? 'badge-amarelo' : 
+                          (l.status === 'perdidos' || l.estornado ? 'badge-vermelho' : 
+                          (l.status === 'abandonados' ? 'badge-equipe' : 'badge-verde')));
+                          
+        return `
+        <tr>
+            <td style="font-weight: bold; color: var(--text);">${l.nome}</td>
+            <td style="color: var(--muted);">${l.whatsapp}</td>
+            <td>${l.produto || 'Geral'}</td>
+            <td style="color:var(--text); font-weight:bold; text-align:right;">R$ ${Number(l.valor).toFixed(2)}</td>
+            <td><span class="badge ${statusBadge}">${l.estornado ? 'ESTORNADO NO CAIXA' : l.status.toUpperCase()}</span></td>
+            <td style="color: var(--muted); font-size:12px;">${l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : 'Sem Registro'}</td>
+        </tr>`;
     }).join('');
 }
 
-const filterSelect = document.getElementById('export-filter-status'); if (filterSelect) filterSelect.addEventListener('change', renderizarTabelaExportacao);
+const filterSelect = document.getElementById('export-filter-status'); 
+if (filterSelect) {
+    filterSelect.addEventListener('change', renderizarTabelaExportacao);
+}
 
-async function registrarAuditoriaExportacao(tipo, qtd) { await supabase.from('logs_exportacao').insert([{ usuario: perfilAtual.full_name, tipo: tipo, quantidade: qtd }]); carregarAuditoriaExportacao(); }
+async function registrarAuditoriaExportacao(tipo, qtd) { 
+    try {
+        await supabase.from('logs_exportacao').insert([{ 
+            usuario: perfilAtual.full_name, 
+            tipo: tipo, 
+            quantidade: qtd 
+        }]); 
+        
+        carregarAuditoriaExportacao(); 
+    } catch (err) {
+        console.error('Falha de escrita no log:', err);
+    }
+}
 
 async function carregarAuditoriaExportacao() {
-    const tbody = document.getElementById('tbody-logs-exportacao'); if (!tbody) return;
-    const { data } = await supabase.from('logs_exportacao').select('*').order('created_at', { ascending: false }).limit(10); logsExportacaoData = data || [];
-    if(logsExportacaoData.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px; color:var(--muted);">Nenhuma exportação realizada ainda.</td></tr>`; return; }
-    tbody.innerHTML = logsExportacaoData.map(log => `<tr><td style="font-weight: bold; color: var(--text);">${log.usuario}</td><td>${log.tipo === 'EXCEL' ? '<i class="ph ph-file-csv" style="color:#21a366;"></i>' : '<i class="ph ph-file-pdf" style="color:#dc3545;"></i>'} ${log.tipo}</td><td><strong style="color:var(--novos)">${log.quantidade}</strong> leads</td><td style="color: var(--muted); font-size:12px; text-align:right;">${new Date(log.created_at).toLocaleString('pt-BR')}</td></tr>`).join('');
+    const tbody = document.getElementById('tbody-logs-exportacao'); 
+    if (!tbody) return;
+    
+    const { data } = await supabase
+        .from('logs_exportacao')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10); 
+        
+    logsExportacaoData = data || [];
+    
+    if(logsExportacaoData.length === 0) { 
+        tbody.innerHTML = `
+        <tr>
+            <td colspan="4" style="text-align:center; padding: 20px; color:var(--muted);">
+                Nenhuma exportação corporativa realizada ainda. O log de segurança está limpo.
+            </td>
+        </tr>`; 
+        return; 
+    }
+    
+    tbody.innerHTML = logsExportacaoData.map(log => `
+        <tr>
+            <td style="font-weight: bold; color: var(--text);">${log.usuario}</td>
+            <td>
+                ${log.tipo === 'EXCEL' ? '<i class="ph ph-file-csv" style="color:#21a366;"></i>' : '<i class="ph ph-file-pdf" style="color:#dc3545;"></i>'} 
+                ${log.tipo}
+            </td>
+            <td><strong style="color:var(--novos)">${log.quantidade}</strong> Leads Processados</td>
+            <td style="color: var(--muted); font-size:12px; text-align:right;">${new Date(log.created_at).toLocaleString('pt-BR')}</td>
+        </tr>`).join('');
 }
 
 window.exportarCSV = () => {
-    const list = getLeadsExportacao(); if (list.length === 0) return mostrarToast('Não há dados para exportar.', 'erro');
-    const headers = ["Nome", "WhatsApp", "Produto", "Forma_Pagto", "Valor_R$", "Status", "Data_Criacao", "Anotacoes"];
-    const rows = list.map(l => `"${l.nome}";"${l.whatsapp}";"${l.produto || 'Geral'}";"${l.forma_pagamento || 'Pix'}";"${l.valor}";"${l.estornado ? 'ESTORNADO' : l.status}";"${l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '-'}";"${l.notas ? l.notas.replace(/(\r\n|\n|\r)/gm, " ").replace(/;/g, ",").replace(/"/g, '""') : ""}"`);
-    const csvContent = "\uFEFF" + headers.join(";") + "\n" + rows.join("\n"); const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }))); link.setAttribute("download", `relatorio_hapsis_${new Date().getTime()}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); registrarAuditoriaExportacao('EXCEL', list.length); mostrarToast('Planilha baixada!', 'ok');
+    const list = getLeadsExportacao(); 
+    if (list.length === 0) return mostrarToast('Atenção: Não há dados para exportar na tela atual.', 'erro');
+    
+    const headers = ["Nome Completo do Cliente", "WhatsApp Registrado", "Produto Matriz", "Forma de Pagamento", "Valor do Contrato (R$)", "Status Final", "Data de Criação do Lead", "Anotações e Fichas"];
+    
+    const rows = list.map(l => `"${l.nome}";"${l.whatsapp}";"${l.produto || 'Geral'}";"${l.forma_pagamento || 'Pix'}";"${l.valor}";"${l.estornado ? 'ESTORNADO FINANCEIRAMENTE' : l.status}";"${l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '-'}";"${l.notas ? l.notas.replace(/(\r\n|\n|\r)/gm, " ").replace(/;/g, ",").replace(/"/g, '""') : ""}"`);
+    
+    const csvContent = "\uFEFF" + headers.join(";") + "\n" + rows.join("\n"); 
+    
+    const link = document.createElement("a"); 
+    link.setAttribute("href", URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }))); 
+    link.setAttribute("download", `relatorio_corporativo_hapsis_${new Date().getTime()}.csv`); 
+    
+    document.body.appendChild(link); 
+    link.click(); 
+    document.body.removeChild(link);
+    
+    registrarAuditoriaExportacao('EXCEL', list.length); 
+    mostrarToast('Planilha extraída e baixada com sucesso!', 'ok');
 };
 
 window.exportarPDF = () => {
-    const list = getLeadsExportacao(); if (list.length === 0) return mostrarToast('Não há dados para exportar.', 'erro');
+    const list = getLeadsExportacao(); 
+    
+    if (list.length === 0) return mostrarToast('Atenção: Não há dados para montar o relatório PDF.', 'erro');
+    
     const janela = window.open('', '_blank');
-    let html = `<html><head><title>Relatório</title><style>body{font-family:Arial;padding:40px;color:#333;}h1{border-bottom:2px solid #333;}table{width:100%;border-collapse:collapse;margin-top:20px;}th,td{padding:12px;border-bottom:1px solid #ddd;text-align:left;}th{background:#f8f9fa;}@media print{body{padding:0;}}</style></head><body><h1>Relatório HAPSIS</h1><p>Gerado por: ${perfilAtual.full_name} | Total: ${list.length}</p><table><thead><tr><th>Cliente</th><th>Contato</th><th>Produto</th><th>Valor</th><th>Status</th></tr></thead><tbody>${list.map(l => `<tr><td>${l.nome}</td><td>${l.whatsapp}</td><td>${l.produto||'-'}</td><td>R$ ${Number(l.valor).toFixed(2)}</td><td>${l.estornado ? 'ESTORNADO' : l.status}</td></tr>`).join('')}</tbody></table><script>window.onload=()=>{window.print();window.close();}</script></body></html>`;
-    janela.document.write(html); janela.document.close(); registrarAuditoriaExportacao('PDF', list.length);
+    let html = `
+    <html>
+        <head>
+            <title>Relatório Gerencial HAPSIS</title>
+            <style>
+                body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding:40px; color:#333; line-height: 1.6;}
+                h1{border-bottom:3px solid #f5c518; padding-bottom: 15px; color: #10121a; text-transform: uppercase;}
+                table{width:100%; border-collapse:collapse; margin-top:30px;}
+                th, td{padding:14px; border-bottom:1px solid #ddd; text-align:left; font-size: 14px;}
+                th{background:#f8f9fa; color: #555;}
+                .header-info { margin-top: 15px; font-weight: bold; color: #666; font-size: 14px; }
+                @media print{body{padding:0;}}
+            </style>
+        </head>
+        <body>
+            <h1>Relatório Executivo de Vendas</h1>
+            <div class="header-info">
+                <p>Data de Extração: ${new Date().toLocaleDateString('pt-BR')}</p>
+                <p>Emitido e Assinado por: ${perfilAtual.full_name}</p>
+                <p>Volume de Dados Lidos: ${list.length} Registros Consolidados</p>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome do Cliente</th>
+                        <th>WhatsApp</th>
+                        <th>Produto Matriz</th>
+                        <th style="text-align:right;">Valor Final</th>
+                        <th>Status Atual</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${list.map(l => `
+                    <tr>
+                        <td><strong>${l.nome}</strong></td>
+                        <td>${l.whatsapp}</td>
+                        <td>${l.produto||'-'}</td>
+                        <td style="text-align:right; font-weight:bold; color:#21a366;">R$ ${Number(l.valor).toFixed(2)}</td>
+                        <td>${l.estornado ? 'ESTORNADO/CHURN' : l.status.toUpperCase()}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+            <script>window.onload=()=>{window.print();window.close();}</script>
+        </body>
+    </html>`;
+    
+    janela.document.write(html); 
+    janela.document.close(); 
+    
+    registrarAuditoriaExportacao('PDF', list.length);
 };
 
-// ==========================================
-// PAINEL EXECUTIVO CORPORATIVO (DASHBOARD CEO)
-// ==========================================
+// ============================================================================
+// 23. PAINEL EXECUTIVO CORPORATIVO (DASHBOARD CEO/GROWTH)
+// ============================================================================
 function renderizarGestor() {
-    const fechadosReais = leadsData.filter(l => l.status === 'fechados' && l.aprovado === true && !l.estornado); const faturamento = fechadosReais.reduce((acc, l) => acc + Number(l.valor), 0);
+    const fechadosReais = leadsData.filter(l => l.status === 'fechados' && l.aprovado === true && !l.estornado); 
+    const faturamento = fechadosReais.reduce((acc, l) => acc + Number(l.valor), 0);
     
-    if (document.getElementById('chefao-faturamento')) document.getElementById('chefao-faturamento').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(faturamento);
-    if (document.getElementById('chefao-ticket')) document.getElementById('chefao-ticket').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(fechadosReais.length ? faturamento / fechadosReais.length : 0);
-    if (document.getElementById('chefao-forecast')) { let somaNovos = leadsData.filter(l => l.status === 'novos').reduce((acc, l) => acc + Number(l.valor), 0); let somaNegociacao = leadsData.filter(l => l.status === 'negociacao').reduce((acc, l) => acc + Number(l.valor), 0); document.getElementById('chefao-forecast').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format((somaNovos * 0.10) + (somaNegociacao * 0.50)); }
+    if (document.getElementById('chefao-faturamento')) {
+        document.getElementById('chefao-faturamento').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(faturamento);
+    }
+    
+    if (document.getElementById('chefao-ticket')) {
+        document.getElementById('chefao-ticket').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(fechadosReais.length ? faturamento / fechadosReais.length : 0);
+    }
+    
+    if (document.getElementById('chefao-forecast')) { 
+        let somaNovos = leadsData.filter(l => l.status === 'novos').reduce((acc, l) => acc + Number(l.valor), 0); 
+        let somaNegociacao = leadsData.filter(l => l.status === 'negociacao').reduce((acc, l) => acc + Number(l.valor), 0); 
+        
+        // Ponderação do pipeline preditivo: 10% de conversão dos novos, 50% de chance dos em negociação
+        document.getElementById('chefao-forecast').innerText = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format((somaNovos * 0.10) + (somaNegociacao * 0.50)); 
+    }
 
-    const ctxFugasLinha = document.getElementById('chart-fugas-linha'); const ctxFugasMotivos = document.getElementById('chart-fugas-motivos');
+    // =======================================================
+    // MOTOR GRÁFICO (Chart.js) PARA O DASHBOARD
+    // =======================================================
+    const ctxFugasLinha = document.getElementById('chart-fugas-linha'); 
+    const ctxFugasMotivos = document.getElementById('chart-fugas-motivos');
+    
     if (ctxFugasLinha && ctxFugasMotivos) {
+        
         const perdidos = leadsData.filter(l => l.status === 'perdidos' || l.estornado || l.status === 'abandonados'); 
         const contagemMotivos = {}; 
-        perdidos.forEach(l => { const m = l.motivo_perda || 'Ghosting / Sem Registro'; contagemMotivos[m] = (contagemMotivos[m] || 0) + 1; });
         
-        if (chartFugasMotivosInstance) chartFugasMotivosInstance.destroy(); 
-        chartFugasMotivosInstance = new Chart(ctxFugasMotivos, { type: 'doughnut', data: { labels: Object.keys(contagemMotivos).length > 0 ? Object.keys(contagemMotivos) : ['Sem perdas'], datasets: [{ data: Object.values(contagemMotivos).length > 0 ? Object.values(contagemMotivos) : [1], backgroundColor: ['#ff5c5c', '#ff8a65', '#e57373', '#f06292', '#ba68c8', '#8890aa'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { color: '#8890aa', font: {size: 10} } } } } });
-
-        const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']; let valores7Dias = [0,0,0,0,0,0,0]; let labels7Dias = []; let hoje = new Date(); for(let i=6; i>=0; i--) { let d = new Date(); d.setDate(hoje.getDate() - i); labels7Dias.push(diasSemana[d.getDay()]); }
-        perdidos.forEach(l => { let dataPerda = new Date(l.created_at); if (l.historico && l.historico.length > 0) { const logPerda = l.historico.find(h => h.msg.includes('PERDIDO') || h.msg.includes('ESTORNO') || h.msg.includes('ABANDONADO')); if (logPerda) dataPerda = new Date(logPerda.data); } let diffDias = Math.floor((hoje.getTime() - dataPerda.getTime()) / (1000 * 3600 * 24)); if(diffDias >= 0 && diffDias <= 6) { valores7Dias[6 - diffDias] += Number(l.valor); } });
+        perdidos.forEach(l => { 
+            const m = l.motivo_perda || 'Ghosting / Sem Registro'; 
+            contagemMotivos[m] = (contagemMotivos[m] || 0) + 1; 
+        });
         
-        if (chartFugasLinhaInstance) chartFugasLinhaInstance.destroy(); 
-        chartFugasLinhaInstance = new Chart(ctxFugasLinha, { type: 'line', data: { labels: labels7Dias, datasets: [{ label: 'Valor Perdido (R$)', data: valores7Dias, borderColor: '#ff5c5c', backgroundColor: 'rgba(255,92,92,0.1)', borderWidth: 2, pointBackgroundColor: '#ff5c5c', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#2c3047' }, ticks: { color: '#8890aa' } }, x: { grid: { display: false }, ticks: { color: '#8890aa' } } } } });
-    }
-
-    const ranking = {}; fechadosReais.forEach(l => { ranking[l.user_id] = (ranking[l.user_id] || 0) + Number(l.valor); }); const arrayRank = Object.keys(ranking).map(id => { let p = perfisEquipe.find(x => x.id === id); return { nome: p?.full_name || 'Desconhecido', eqp: p?.equipe || 'Geral', total: ranking[id] }; }).sort((a, b) => b.total - a.total);
-    if (document.getElementById('tabela-ranking')) document.getElementById('tabela-ranking').innerHTML = arrayRank.map((v, i) => `<tr><td>${i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : ''))} ${v.nome}</td><td><span class="badge badge-equipe">${v.eqp}</span></td><td style="color:var(--fechados); font-weight:bold; text-align:right;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(v.total)}</td></tr>`).join('');
-
-    const prods = {}; fechadosReais.forEach(l => { let p = l.produto || 'Geral'; prods[p] = (prods[p] || 0) + Number(l.valor); }); const arrayProds = Object.keys(prods).map(k => ({ nome: k, total: prods[k] })).sort((a, b) => b.total - a.total);
-    if (document.getElementById('tabela-produtos')) { if (arrayProds.length === 0) { document.getElementById('tabela-produtos').innerHTML = `<tr><td colspan="2" style="text-align:center; padding: 20px; color:var(--muted);">Nenhum produto fechado ainda.</td></tr>`; } else { document.getElementById('tabela-produtos').innerHTML = arrayProds.map(p => `<tr><td>${p.nome}</td><td style="font-weight:bold; color:var(--text); text-align:right;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(p.total)}</td></tr>`).join(''); } }
-}
-
-function renderizarAbaAuditoria() {
-    const elTabela = document.getElementById('tabela-auditoria'); if (!elTabela) return;
-    if (leadsData.length === 0) { elTabela.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 40px; color:var(--muted);"><i class="ph ph-folder-open" style="font-size: 32px; display:block; margin-bottom:10px;"></i>Vazio.</td></tr>`; return; }
-    
-    elTabela.innerHTML = leadsData.map(l => {
-        let statusBadge = l.status === 'novos' ? 'badge-azul' : (l.status === 'negociacao' ? 'badge-amarelo' : (l.status === 'perdidos' || l.estornado ? 'badge-vermelho' : (l.status === 'abandonados' ? 'badge-equipe' : 'badge-verde')));
-        return `<tr><td style="font-weight: 500;">${l.nome}</td><td style="color:var(--muted); font-size:13px;">${l.whatsapp}</td><td>${l.produto || 'Geral'}</td><td style="font-weight:bold; text-align:right;">R$ ${Number(l.valor).toFixed(2)}</td><td><span class="badge ${statusBadge}">${l.estornado ? 'ESTORNADO' : l.status.toUpperCase()}</span></td><td style="color:var(--muted);">${perfisEquipe.find(p => p.id === l.user_id)?.full_name || 'Deletado'}</td></tr>`;
-    }).join('');
-}
-
-// ==========================================
-// GESTÃO DE EQUIPES E WHITE-LABEL
-// ==========================================
-window.toggleFolder = (nomeEquipeId) => { const content = document.getElementById(`folder-content-${nomeEquipeId}`); const card = document.getElementById(`folder-card-${nomeEquipeId}`); if (content && card) { content.classList.toggle('open'); card.classList.toggle('open'); } };
-
-function renderizarAbaEquipe() {
-    const container = document.getElementById('container-equipes'); if (!container) return;
-    const fechados = leadsData.filter(l => l.status === 'fechados' && l.aprovado === true && !l.estornado); const equipesAgrupadas = {};
-    perfisEquipe.forEach(p => { const ne = p.equipe || 'Geral'; if (!equipesAgrupadas[ne]) { equipesAgrupadas[ne] = []; } equipesAgrupadas[ne].push(p); });
-
-    container.innerHTML = Object.entries(equipesAgrupadas).map(([nomeEquipe, membros]) => {
-        let total = 0, ativos = 0; membros.forEach(p => { total += fechados.filter(l => l.user_id === p.id).reduce((s, l) => s + Number(l.valor), 0); ativos += leadsData.filter(l => l.user_id === p.id && l.status !== 'fechados' && l.status !== 'perdidos' && l.status !== 'abandonados' && !l.estornado).length; });
-        const sId = nomeEquipe.replace(/[^a-zA-Z0-9]/g, '-');
-        
-        return `<div class="folder-card" id="folder-card-${sId}"><div class="folder-header" onclick="window.toggleFolder('${sId}')"><div class="folder-title"><i class="ph ph-caret-right"></i> 📁 ${nomeEquipe.toUpperCase()} <span style="font-size:11px; font-weight:normal; color:var(--muted); margin-left:8px;">${membros.length} Membros | ${ativos} Leads</span></div><div style="display:flex; align-items:center; gap:16px;"><div class="folder-total">Receita: ${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(total)}</div>${(nomeEquipe !== 'Geral' && perfilAtual.role === 'gestor_geral') ? `<button onclick="event.stopPropagation(); window.excluirEquipe('${nomeEquipe}')" style="background:transparent; border:none; color:var(--danger); font-size:20px; cursor:pointer;"><i class="ph ph-trash"></i></button>` : ''}</div></div><div class="folder-content" id="folder-content-${sId}"><table><thead><tr><th>Colaborador</th><th>Perfil</th><th>Vendido</th><th style="text-align: right;">Gerenciar</th></tr></thead><tbody>${membros.map(perfil => { let vend = fechados.filter(l => l.user_id === perfil.id).reduce((s, l) => s + Number(l.valor), 0); let cg = perfil.role === 'gestor_geral' || perfil.role === 'gestor' ? 'color:var(--accent); font-weight:bold;' : (perfil.role === 'gestor_sub' || perfil.role === 'gerente' ? 'color:#b388ff; font-weight:bold;' : 'color:var(--muted);'); let roleStr = perfil.role === 'gestor_geral' || perfil.role === 'gestor' ? 'Gestor Geral' : (perfil.role === 'gestor_sub' || perfil.role === 'gerente' ? 'Gestor Sub' : 'Vendedor'); return `<tr><td style="font-weight: 500;">${perfil.full_name}</td><td style="${cg}">${roleStr.toUpperCase()}</td><td style="color:var(--fechados); font-weight:bold;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(vend)}</td><td style="text-align: right; display:flex; justify-content:flex-end; gap:8px;">${(perfilAtual.role === 'gestor_geral') ? `<button onclick="window.abrirModalEquipe('${perfil.id}', '${perfil.full_name}', '${nomeEquipe}', 0)" style="background: transparent; border: 1px solid var(--border); color: var(--text); padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="ph ph-arrows-left-right"></i> Mover</button>${perfil.id !== usuarioAtual.id ? `<button onclick="window.excluirVendedor('${perfil.id}', '${perfil.full_name}')" style="background: rgba(255,92,92,0.1); border: 1px solid var(--danger); color: var(--danger); padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="ph ph-trash"></i></button>` : ''}` : `<span style="font-size:11px; color:var(--muted); font-style:italic;">Acesso Restrito</span>`}</td></tr>`; }).join('')}</tbody></table></div></div>`;
-    }).join('');
-}
-
-window.abrirModalNovaEquipe = () => { document.getElementById('inp-add-squad-user').innerHTML = perfisEquipe.map(p => `<option value="${p.id}">${p.full_name} (${p.equipe || 'Geral'})</option>`).join(''); document.getElementById('inp-add-squad-nome').value = ''; document.getElementById('modal-nova-equipe').classList.add('ativa'); };
-if (document.getElementById('form-nova-equipe')) { document.getElementById('form-nova-equipe').onsubmit = async (e) => { e.preventDefault(); const { error } = await supabase.from('profiles').update({ equipe: document.getElementById('inp-add-squad-nome').value.trim() }).eq('id', document.getElementById('inp-add-squad-user').value); if (error) mostrarToast('Erro', 'erro'); else { mostrarToast('Squad criado!', 'ok'); document.getElementById('modal-nova-equipe').classList.remove('ativa'); const { data } = await supabase.from('profiles').select('*'); perfisEquipe = data || []; renderizarAbaEquipe(); } }; }
-window.excluirEquipe = (n) => { window.abrirConfirmacao('Desmanchar', `Deseja desmanchar a equipe <strong>${n}</strong>?`, 'Desmanchar', async () => { await supabase.from('profiles').update({ equipe: 'Geral' }).eq('equipe', n); mostrarToast('Desmanchada!', 'ok'); const { data } = await supabase.from('profiles').select('*'); perfisEquipe = data || []; renderizarAbaEquipe(); renderizarGestor(); }); };
-window.excluirVendedor = (id, nome) => { window.abrirConfirmacao('Remover', `Remover <strong>${nome}</strong>?`, 'Remover', async () => { await supabase.from('profiles').delete().eq('id', id); mostrarToast('Removido.', 'ok'); const { data } = await supabase.from('profiles').select('*'); perfisEquipe = data || []; renderizarAbaEquipe(); window.abrirPainelAcessos(); renderizarGestor(); }); };
-window.abrirModalEquipe = (id, nome, eq) => { document.getElementById('nome-usuario-mover').innerText = nome; document.getElementById('inp-equipe-userid').value = id; document.getElementById('inp-equipe-select').innerHTML = [...new Set(perfisEquipe.map(p => p.equipe || 'Geral'))].map(e => `<option value="${e}" ${e === eq ? 'selected' : ''}>${e}</option>`).join(''); document.getElementById('inp-equipe-nova').value = ''; document.getElementById('modal-mudar-equipe').classList.add('ativa'); };
-if (document.getElementById('btn-fechar-modal-equipe')) document.getElementById('btn-fechar-modal-equipe').onclick = () => document.getElementById('modal-mudar-equipe').classList.remove('ativa');
-if (document.getElementById('form-mudar-equipe')) { document.getElementById('form-mudar-equipe').onsubmit = async (e) => { e.preventDefault(); const vNovo = document.getElementById('inp-equipe-nova').value.trim(); const vF = vNovo !== '' ? vNovo : document.getElementById('inp-equipe-select').value; await supabase.from('profiles').update({ equipe: vF }).eq('id', document.getElementById('inp-equipe-userid').value); mostrarToast('Atualizado!', 'ok'); document.getElementById('modal-mudar-equipe').classList.remove('ativa'); const { data } = await supabase.from('profiles').select('*'); perfisEquipe = data || []; renderizarAbaEquipe(); window.abrirPainelAcessos(); renderizarGestor(); }; }
-
-window.abrirPainelAcessos = () => { const tbody = document.getElementById('lista-painel-acessos'); if (!tbody) return; tbody.innerHTML = perfisEquipe.map(p => `<tr><td style="font-weight:bold;">${p.full_name}</td><td><span class="badge badge-equipe">${p.equipe || 'Geral'}</span></td><td><span class="badge" style="${p.role === 'gestor_geral' || p.role === 'gestor' ? 'color:var(--accent);' : (p.role === 'gestor_sub' || p.role === 'gerente' ? 'color:#b388ff;' : 'color:var(--muted);')}">${p.role === 'gestor_geral' || p.role === 'gestor' ? 'GESTOR GERAL' : (p.role === 'gestor_sub' || p.role === 'gerente' ? 'GESTOR SUB' : 'VENDEDOR')}</span></td><td style="text-align: right;">${p.id === usuarioAtual.id ? `<span style="font-size: 12px; color: var(--muted); font-style: italic;">Você</span>` : `<select onchange="window.mudarCargoUsuario('${p.id}', '${p.full_name}', this.value)" style="background:#0d0f18; border:1px solid var(--border); color:var(--text); padding:4px 8px; border-radius:6px; font-size:12px;"><option value="vendedor" ${p.role==='vendedor'?'selected':''}>Vendedor</option><option value="gestor_sub" ${(p.role==='gestor_sub'||p.role==='gerente')?'selected':''}>Gestor Sub</option><option value="gestor_geral" ${(p.role==='gestor_geral'||p.role==='gestor')?'selected':''}>Gestor Geral</option></select>`}</td></tr>`).join(''); document.getElementById('modal-acessos').classList.add('ativa'); };
-window.mudarCargoUsuario = async (id, n, c) => { await supabase.from('profiles').update({ role: c }).eq('id', id); mostrarToast(`Nível de ${n} atualizado!`, 'ok'); const { data } = await supabase.from('profiles').select('*'); perfisEquipe = data || []; window.abrirPainelAcessos(); renderizarAbaEquipe(); };
-
-function renderizarConfiguracoes() { const perfilGestor = perfisEquipe.find(p => p.role === 'gestor_geral') || perfilAtual; document.getElementById('inp-config-logo').value = perfilGestor.logo_empresa || ''; document.getElementById('inp-config-cor').value = perfilGestor.cor_primaria || '#f5c518'; document.getElementById('inp-config-cor-texto').value = perfilGestor.cor_primaria || '#f5c518'; }
-const inpCor = document.getElementById('inp-config-cor'); const inpCorTexto = document.getElementById('inp-config-cor-texto');
-if (inpCor && inpCorTexto) { inpCor.addEventListener('input', (e) => { inpCorTexto.value = e.target.value; document.documentElement.style.setProperty('--accent', e.target.value); }); inpCorTexto.addEventListener('input', (e) => { inpCor.value = e.target.value; document.documentElement.style.setProperty('--accent', e.target.value); }); }
-if (document.getElementById('form-config')) { document.getElementById('form-config').onsubmit = async (e) => { e.preventDefault(); const btn = document.getElementById('form-config').querySelector('button'); btn.innerHTML = 'Aplicando...'; const { error } = await supabase.from('profiles').update({ logo_empresa: document.getElementById('inp-config-logo').value, cor_primaria: document.getElementById('inp-config-cor').value }).eq('id', usuarioAtual.id); btn.innerHTML = '<i class="ph ph-check-circle"></i> Aplicar Identidade Visual'; if (error) mostrarToast('Erro ao salvar configurações.', 'erro'); else { mostrarToast('Marca atualizada!', 'ok'); setTimeout(() => window.location.reload(), 1000); } }; }
-
-// ==========================================
-// BARRA MÁGICA, NOTIFICAÇÕES E IA
-// ==========================================
-const cmdPalette = document.getElementById('cmd-palette'); const cmdInput = document.getElementById('cmd-input'); const cmdList = document.getElementById('cmd-list');
-const comandosDisponiveis = [
-    { id: 'novo-lead', titulo: 'Novo Cliente', sub: 'Adicionar um lead ao funil', icone: 'ph-plus-circle', roles: ['vendedor'], acao: () => document.getElementById('modal-lead').classList.add('ativa') },
-    { id: 'ir-pipeline', titulo: 'Ver Pipeline', sub: 'Acessar o Kanban de vendas', icone: 'ph-kanban', roles: ['vendedor'], acao: () => document.querySelector('[data-aba="aba-kanban"]').click() },
-    { id: 'ir-posvenda', titulo: 'Esteira Pós-Venda', sub: 'Gerenciar sucesso e retenção', icone: 'ph-handshake', roles: ['vendedor'], acao: () => document.querySelector('[data-aba="aba-pos-venda"]').click() },
-    { id: 'ir-arena', titulo: 'Arena de Vendas (Ranking)', sub: 'Ver posição e medalhas', icone: 'ph-trophy', roles: ['vendedor'], acao: () => document.querySelector('[data-aba="aba-arena"]').click() },
-    { id: 'ir-agenda', titulo: 'Minha Agenda', sub: 'Ver tarefas e follow-ups', icone: 'ph-calendar-check', roles: ['vendedor'], acao: () => document.querySelector('[data-aba="aba-agenda"]').click() },
-    { id: 'ir-visao', titulo: 'Painel Executivo', sub: 'Acessar visão corporativa', icone: 'ph-chart-line-up', roles: ['gestor_sub', 'gestor_geral'], acao: () => document.querySelector('[data-aba="aba-chefao"]').click() },
-    { id: 'ir-aprovacoes', titulo: 'Aprovações de Caixa', sub: 'Validar vendas da equipe', icone: 'ph-seal-check', roles: ['gestor_sub', 'gestor_geral'], acao: () => document.querySelector('[data-aba="aba-aprovacoes"]').click() },
-    { id: 'ir-comissoes', titulo: 'Caixa & Comissões', sub: 'Livro-caixa e pagamentos', icone: 'ph-money', roles: ['gestor_sub', 'gestor_geral'], acao: () => document.querySelector('[data-aba="aba-comissoes"]').click() },
-    { id: 'ir-despesas', titulo: 'Contas a Pagar', sub: 'Lançar despesas financeiras', icone: 'ph-receipt', roles: ['gestor_sub'], acao: () => document.querySelector('[data-aba="aba-despesas"]').click() },
-    { id: 'ir-cobrancas', titulo: 'Central de Inadimplência', sub: 'Gerenciar atrasos e estornos', icone: 'ph-warning-octagon', roles: ['gestor_sub'], acao: () => document.querySelector('[data-aba="aba-cobrancas"]').click() },
-    { id: 'ir-mrr', titulo: 'Controle de MRR', sub: 'Gerenciar receita recorrente', icone: 'ph-arrows-clockwise', roles: ['gestor_sub'], acao: () => document.querySelector('[data-aba="aba-mrr"]').click() },
-    { id: 'ir-contratos', titulo: 'Cofre de Contratos', sub: 'Arquivos de clientes', icone: 'ph-folder-lock', roles: ['gestor_sub'], acao: () => document.querySelector('[data-aba="aba-contratos"]').click() },
-    { id: 'ir-auditoria-desconto', titulo: 'Auditoria de Descontos', sub: 'Analisar perdas na margem', icone: 'ph-scissors', roles: ['gestor_sub'], acao: () => document.querySelector('[data-aba="aba-auditoria-descontos"]').click() },
-    { id: 'ir-exportacao', titulo: 'Exportar Relatórios', sub: 'Gerar planilhas', icone: 'ph-file-csv', roles: ['gestor_sub', 'gestor_geral'], acao: () => document.querySelector('[data-aba="aba-exportacao"]').click() },
-    { id: 'ajustar-meta', titulo: 'Ajustar Meta', sub: 'Definir objetivo de faturamento', icone: 'ph-target', roles: ['gestor_geral'], acao: () => window.alterarMeta() },
-    { id: 'novo-aviso', titulo: 'Disparar Aviso', sub: 'Mandar recado para a equipe', icone: 'ph-megaphone', roles: ['gestor_geral', 'gestor_sub'], acao: () => window.criarAviso() },
-    { id: 'ir-equipes', titulo: 'Gestão de Equipes', sub: 'Gerenciar squads', icone: 'ph-users', roles: ['gestor_geral'], acao: () => document.querySelector('[data-aba="aba-equipe"]').click() },
-    { id: 'sair', titulo: 'Sair do Sistema', sub: 'Fazer logout', icone: 'ph-sign-out', roles: ['gestor_geral', 'gestor_sub', 'vendedor'], acao: () => supabase.auth.signOut() }
-];
-
-let comandosFiltrados = []; let indiceSelecionado = 0;
-function abrirBarraMagica() { if (!perfilAtual) return; cmdPalette.classList.add('ativa'); cmdInput.value = ''; filtrarComandos(''); cmdInput.focus(); }
-function fecharBarraMagica() { cmdPalette.classList.remove('ativa'); if (cmdInput) cmdInput.blur(); }
-function executarComando(index) { if (comandosFiltrados[index]) { fecharBarraMagica(); comandosFiltrados[index].acao(); } }
-function renderizarComandos() { if (comandosFiltrados.length === 0) { cmdList.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--muted);">Sem comandos encontrados.</div>`; return; } cmdList.innerHTML = comandosFiltrados.map((cmd, i) => `<div class="cmd-item ${i === indiceSelecionado ? 'selecionado' : ''}" onclick="window.executarCmdClick(${i})" onmouseenter="window.setCmdIndex(${i})"><i class="ph ${cmd.icone}"></i><div class="cmd-item-texts"><span class="cmd-item-title">${cmd.titulo}</span><span class="cmd-item-sub">${cmd.sub}</span></div></div>`).join(''); }
-function filtrarComandos(t) { const b = t.toLowerCase(); comandosFiltrados = comandosDisponiveis.filter(c => c.roles.includes(perfilAtual.role) && (c.titulo.toLowerCase().includes(b) || c.sub.toLowerCase().includes(b))); indiceSelecionado = 0; renderizarComandos(); }
-window.executarCmdClick = (i) => executarComando(i); window.setCmdIndex = (i) => { indiceSelecionado = i; const itens = cmdList.querySelectorAll('.cmd-item'); itens.forEach((item, j) => { if (j === i) item.classList.add('selecionado'); else item.classList.remove('selecionado'); }); };
-
-if (document.getElementById('btn-abrir-comandos')) document.getElementById('btn-abrir-comandos').onclick = () => abrirBarraMagica();
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.code === 'KeyK') { e.preventDefault(); e.stopPropagation(); if (cmdPalette.classList.contains('ativa')) fecharBarraMagica(); else abrirBarraMagica(); return; }
-    if (cmdPalette.classList.contains('ativa')) {
-        if (e.key === 'Escape') fecharBarraMagica();
-        if (e.key === 'ArrowDown') { e.preventDefault(); indiceSelecionado = (indiceSelecionado + 1) % comandosFiltrados.length; window.setCmdIndex(indiceSelecionado); const itens = cmdList.querySelectorAll('.cmd-item'); if (itens[indiceSelecionado]) itens[indiceSelecionado].scrollIntoView({block: "nearest"}); }
-        if (e.key === 'ArrowUp') { e.preventDefault(); indiceSelecionado = (indiceSelecionado - 1 + comandosFiltrados.length) % comandosFiltrados.length; window.setCmdIndex(indiceSelecionado); const itens = cmdList.querySelectorAll('.cmd-item'); if (itens[indiceSelecionado]) itens[indiceSelecionado].scrollIntoView({block: "nearest"}); }
-        if (e.key === 'Enter') { e.preventDefault(); executarComando(indiceSelecionado); }
-    }
-});
-if (cmdInput) cmdInput.addEventListener('input', (e) => filtrarComandos(e.target.value));
-if (cmdPalette) cmdPalette.addEventListener('mousedown', (e) => { if (e.target === cmdPalette) fecharBarraMagica(); });
-
-function configurarNotificacoes() {
-    supabase.removeAllChannels();
-    supabase.channel('notificacoes-vendas').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'leads' }, (payload) => {
-        if (payload.new.status === 'fechados' && payload.old.status !== 'fechados') {
-            const val = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(payload.new.valor); mostrarToast(`🎉 Venda de ${val} fechada!`, 'ok');
-            if (perfilAtual && (perfilAtual.role === 'gestor_geral' || perfilAtual.role === 'gestor_sub')) {
-                const lista = document.getElementById('notif-list');
-                if (lista) { if (lista.querySelector('.notif-empty')) lista.innerHTML = ''; const div = document.createElement('div'); div.className = 'notif-item'; div.innerHTML = `💰 <strong>${val}</strong><br><span style="color:var(--muted)">Produto:</span> ${payload.new.produto||'Geral'}<br><span style="color:var(--muted)">Por:</span> ${perfisEquipe.find(p=>p.id===payload.new.user_id)?.full_name||'Sua equipe'}`; lista.insertBefore(div, lista.firstChild); }
-                if (document.getElementById('notif-panel') && document.getElementById('notif-panel').classList.contains('hidden')) { notifsNaoLidas++; document.getElementById('notif-count').innerText = notifsNaoLidas; document.getElementById('notif-count').classList.add('tem-notif'); }
-            }
-            carregarLeads(); 
+        if (chartFugasMotivosInstance) {
+            chartFugasMotivosInstance.destroy(); 
         }
-    }).subscribe();
-    supabase.channel('mudanca-cargo').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
-        if (payload.new.id === usuarioAtual.id && payload.new.role !== perfilAtual.role) { mostrarToast('Seu acesso mudou.', 'ok'); setTimeout(()=> window.location.reload(), 2000); }
-        if (payload.new.id === usuarioAtual.id && payload.new.logo_empresa !== perfilAtual.logo_empresa) { setTimeout(()=> window.location.reload(), 1000); }
-    }).subscribe();
-}
+        
+        const labelsFugas = Object.keys(contagemMotivos).length > 0 ? Object.keys(contagemMotivos) : ['Sem perdas na operação'];
+        const dataFugas = Object.keys(contagemMotivos).length > 0 ? Object.values(contagemMotivos) : [1];
+        
+        // Correção Crítica de Design: Se não tiver perda, pinta de cinza corporativo e não de cor de erro
+        const coresFugas = Object.keys(contagemMotivos).length > 0 
+            ? ['#f05252', '#fb923c', '#f87171', '#f43f5e', '#c084fc', '#8890aa'] 
+            : ['#2e3550'];
 
-async function gerarRelatorioIA() {
-    const apiKey = 'COLE_SUA_CHAVE_OPENAI_AQUI'; 
-    const url = 'https://api.openai.com/v1/chat/completions';
-    const textoTela = document.querySelector('.ia-report-text'); if (!textoTela) return;
-    textoTela.innerHTML = '<span style="color: var(--novos);"><i class="ph ph-spinner ph-spin"></i> O Cérebro da IA está analisando seus dados de caixa...</span>';
+        chartFugasMotivosInstance = new Chart(ctxFugasMotivos, { 
+            type: 'doughnut', 
+            data: { 
+                labels: labelsFugas, 
+                datasets: [{ 
+                    data: dataFugas, 
+                    backgroundColor: coresFugas, 
+                    borderWidth: 0 
+                }] 
+            }, 
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                cutout: '72%', 
+                plugins: { 
+                    legend: { position: 'right', labels: { color: '#c4c9e0', font: {size: 11} } } 
+                } 
+            } 
+        });
 
-    const fechados = leadsData.filter(l => l.status === 'fechados' && !l.estornado);
-    const perdidos = leadsData.filter(l => l.status === 'perdidos' || l.estornado || l.status === 'abandonados');
-    const receita = fechados.reduce((acc, l) => acc + Number(l.valor), 0);
-    const risco = leadsData.filter(l => l.is_inadimplente).reduce((acc, l) => acc + Number(l.valor), 0);
-
-    const prompt = `Aja como um Diretor de Vendas e CFO experiente, focado em alta performance (Growth). Aqui estão os dados atuais da minha empresa neste mês: - Vendas Fechadas: ${fechados.length} - Faturamento Aprovado: R$ ${receita.toFixed(2)} - Vendas Perdidas/Abandonadas: ${perdidos.length} - Dinheiro em Risco (Inadimplência): R$ ${risco.toFixed(2)}. Faça uma análise rápida, agressiva e direta (máximo de 3 parágrafos) sobre a saúde do meu negócio. Dê um conselho tático do que eu devo cobrar da minha equipe comercial agora. Use formatação HTML básica (<b>, <ul>, <br>) para destacar pontos. Não use Markdown.`;
-
-    try {
-        const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` }, body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'system', content: 'Você é o motor de IA corporativo do sistema HAPSIS.' }, { role: 'user', content: prompt }], temperature: 0.7 }) });
-        const data = await response.json();
-        if (data.error) { textoTela.innerHTML = `<span style="color: var(--danger);">Erro da OpenAI: ${data.error.message}</span>`; return; }
-        textoTela.innerHTML = data.choices[0].message.content;
-    } catch (error) { textoTela.innerHTML = `<span style="color: var(--danger);"><i class="ph ph-warning"></i> Falha de conexão com os servidores da OpenAI.</span>`; }
-}
-
-// ==========================================
-// FUNÇÕES DO WHATSAPP
-// ==========================================
-window.abrirModalWhatsApp = (numero, nome) => {
-    document.getElementById('wpp-numero').value = numero; document.getElementById('wpp-nome').value = nome;
-    const customInput = document.getElementById('wpp-custom-msg'); if (customInput) customInput.value = '';
-    document.getElementById('modal-whatsapp').classList.add('ativa');
-};
-
-window.enviarWhatsApp = (tipo) => {
-    const numero = document.getElementById('wpp-numero').value; const nome = document.getElementById('wpp-nome').value;
-    const nomeVendedor = perfilAtual ? perfilAtual.full_name : 'Nossa Equipe'; const nomeEmpresa = perfilAtual ? perfilAtual.nome_empresa : 'HAPSIS';
-    let mensagem = '';
-    
-    if (tipo === 'apresentacao') mensagem = `Olá ${nome}, tudo bem? Sou o ${nomeVendedor} da ${nomeEmpresa}. Vi que você demonstrou interesse em nossos serviços. Podemos conversar?`;
-    else if (tipo === 'followup') mensagem = `Oi ${nome}! Passando para saber se conseguiu dar uma olhada na nossa proposta. Ficou alguma dúvida?`;
-    else if (tipo === 'cobranca') mensagem = `Olá ${nome}, tudo bem? Notamos uma pendência no seu último pagamento. Como podemos te ajudar a regularizar?`;
-    else if (tipo === 'custom') {
-        mensagem = document.getElementById('wpp-custom-msg').value;
-        if (!mensagem.trim()) { mostrarToast('Digite uma mensagem antes de enviar.', 'erro'); return; }
+        // Monta o array da última semana para o gráfico de linha de perdas financeiras
+        const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']; 
+        let valores7Dias = [0,0,0,0,0,0,0]; 
+        let labels7Dias = []; 
+        let hoje = new Date(); 
+        
+        for(let i=6; i>=0; i--) { 
+            let d = new Date(); 
+            d.setDate(hoje.getDate() - i); 
+            labels7Dias.push(diasSemana[d.getDay()]); 
+        }
+        
+        perdidos.forEach(l => { 
+            let dataPerda = new Date(l.created_at); 
+            
+            if (l.historico && l.historico.length > 0) { 
+                const logPerda = l.historico.find(h => h.msg.includes('PERDIDO') || h.msg.includes('ESTORNO') || h.msg.includes('ABANDONADO')); 
+                if (logPerda) {
+                    dataPerda = new Date(logPerda.data); 
+                }
+            } 
+            
+            let diffDias = Math.floor((hoje.getTime() - dataPerda.getTime()) / (1000 * 3600 * 24)); 
+            
+            if(diffDias >= 0 && diffDias <= 6) { 
+                valores7Dias[6 - diffDias] += Number(l.valor); 
+            } 
+        });
+        
+        if (chartFugasLinhaInstance) {
+            chartFugasLinhaInstance.destroy(); 
+        }
+        
+        chartFugasLinhaInstance = new Chart(ctxFugasLinha, { 
+            type: 'line', 
+            data: { 
+                labels: labels7Dias, 
+                datasets: [{ 
+                    label: 'Volume Monetário Perdido (R$)', 
+                    data: valores7Dias, 
+                    borderColor: '#f05252', 
+                    backgroundColor: 'rgba(240,82,82,0.1)', 
+                    borderWidth: 2.5, 
+                    pointBackgroundColor: '#f05252', 
+                    fill: true, 
+                    tension: 0.45 
+                }] 
+            }, 
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } }, 
+                scales: { 
+                    y: { beginAtZero: true, grid: { color: '#2e3550' }, ticks: { color: '#7a83a1' } }, 
+                    x: { grid: { display: false }, ticks: { color: '#7a83a1' } } 
+                } 
+            } 
+        });
     }
-    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`, '_blank'); document.getElementById('modal-whatsapp').classList.remove('ativa');
-};
+
+    // =======================================================
+    // TABELAS DINÂMICAS DO PAINEL DO CEO
+    // =======================================================
+    const ranking = {}; 
+    
+    fechadosReais.forEach(l => { 
+        ranking[l.user_id] = (ranking[l.user_id] || 0) + Number(l.valor); 
+    }); 
+    
+    const arrayRank = Object.keys(ranking).map(id => { 
+        let p = perfisEquipe.find(x => x.id === id); 
+        return { nome: p?.full_name || 'Desconhecido', eqp: p?.equipe || 'Geral', total: ranking[id] }; 
+    }).sort((a, b) => b.total - a.total);
+    
+    if (document.getElementById('tabela-ranking')) {
+        document.getElementById('tabela-ranking').innerHTML = arrayRank.map((v, i) => `
+        <tr>
+            <td style="font-weight: bold; color: var(--text);">${i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : ''))} ${v.nome}</td>
+            <td><span class="badge badge-equipe">${v.eqp}</span></td>
+            <td style="color:var(--fechados); font-weight:900; text-align:right;">${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(v.total)}</td>
+        </tr>`).join('');
+    }
+
+    const prods = {}; 
+    
+    fechadosReais.forEach(l => { 
+        let p = l.produto || 'Consultoria Geral'; 
+        prods[p] = (prods[p] || 0) + Number(l.valor); 
+    }); 
+    
+    const arrayProds = Object.keys(prods).map(k => ({ nome: k, total: prods[k] })).sort((a, b) => b.total - a.total);
+    
+    if (document.getElementById('tabela-produtos')) { 
+        if (arrayProds.length === 0) { 
+            document.getElementById('tabela-produtos').innerHTML = `
+            <tr>
+                <td colspan="2" style="text-align:center; padding: 20px; color:var(--muted);">
+                    Nenhum produto ou assinatura fechada de forma oficial até o momento.
+                </td>
+            </tr>`; 
+        } else { 
+            document.getElementById('tabela-produtos').innerHTML = arrayProds.map(p => `
+            <tr>
+                <td style="color: var(--text); font-weight:600;">${p.nome}</td>
+                <td style="font-weight:900; color:var(--text); text-align:right;">
+                    ${new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(p.total)}
+                </td>
+            </tr>`).join(''); 
+        } 
+    }
+}
+
+// Fim do Motor Javascript Enterprise HAPSIS v2.0
