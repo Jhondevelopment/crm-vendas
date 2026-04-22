@@ -94,12 +94,9 @@
             <div id="box-cargo" class="campo hidden">
                 <label for="auth-cargo">Seu Nível de Acesso</label>
                 <select id="auth-cargo">
-                    <option value="sdr">📞 SDR (Pré-Vendas / Qualificador)</option>
-                    <option value="vendedor">🧑‍💼 Vendedor (Closer)</option>
-                    <option value="cs">🤝 CS (Pós-Venda / Sucesso do Cliente)</option>
-                    <option value="marketing">🚀 Marketing (Gestor de Tráfego / Growth)</option>
-                    <option value="gestor_sub">💼 Gestor Sub (Financeiro / CFO)</option>
-                    <option value="gestor_geral">👑 Gestor Supremo (CEO)</option>
+                    <option value="vendedor">🧑‍💼 Vendedor</option>
+                    <option value="gestor_sub">💼 Sub Gerente</option>
+                    <option value="gestor_geral">👑 Gerente</option>
                 </select>
             </div>
 
@@ -141,11 +138,15 @@
                     type="text" 
                     id="inp-busca-global" 
                     placeholder="Pesquisar registros..." 
-                    title="Filtra a tela instantaneamente" 
+                    title="Filtra a tela instantaneamente"
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                 />
                 <button 
                     id="btn-abrir-comandos" 
-                    title="Abrir Barra Mágica" 
+                    title="Abrir Barra Mágica (Ctrl+K)" 
                     style="position: absolute; right: 8px; background: rgba(255,255,255,0.08); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;"
                 >
                     CTRL K
@@ -179,72 +180,66 @@
         <div class="app-body">
             
             <nav class="sidebar">
-                
+
+                <!-- ================================================
+                     MÓDULO VENDEDOR
+                     Acesso: vendedor
+                     ================================================ -->
                 <div class="nav-group modulo-vendas hidden">
                     <div class="sidebar-category cat-operacao">
-                        <i class="ph ph-rocket-launch"></i> Operação de Vendas
+                        <i class="ph ph-rocket-launch"></i> Minhas Vendas
                     </div>
-                    <button class="nav-item ativo" data-aba="aba-kanban">
+                    <button class="nav-item" data-aba="aba-kanban">
                         <i class="ph ph-kanban"></i> Pipeline
                     </button>
                     <button class="nav-item" data-aba="aba-arena">
                         <i class="ph ph-trophy"></i> Arena
                     </button>
                     <button class="nav-item" data-aba="aba-agenda">
-                        <i class="ph ph-calendar-check"></i> Minha Agenda
+                        <i class="ph ph-calendar-check"></i> Agenda
                     </button>
                     <button class="nav-item" data-aba="aba-relatorio">
                         <i class="ph ph-chart-pie-slice"></i> Meu Relatório
                     </button>
                 </div>
 
-                <div class="nav-group modulo-cs hidden">
-                    <div class="sidebar-category cat-visao">
-                        <i class="ph ph-handshake"></i> Customer Success
-                    </div>
-                    <button class="nav-item" data-aba="aba-pos-venda">
-                        <i class="ph ph-users-three"></i> Esteira Pós-Venda
-                    </button>
-                </div>
-
-                <div class="nav-group modulo-marketing hidden">
-                    <div class="sidebar-category cat-saude">
-                        <i class="ph ph-trend-up"></i> Growth & Marketing
-                    </div>
-                    <button class="nav-item" data-aba="aba-growth">
-                        <i class="ph ph-megaphone"></i> Dash de Aquisição
-                    </button>
-                </div>
-
+                <!-- ================================================
+                     MÓDULO SUB GERENTE (CFO)
+                     Acesso: gestor_sub
+                     ================================================ -->
                 <div class="nav-group modulo-cfo hidden">
-                    <div class="sidebar-category cat-caixa">
-                        <i class="ph ph-wallet"></i> Controle de Caixa
+
+                    <div class="sidebar-category cat-operacao">
+                        <i class="ph ph-rocket-launch"></i> Operação de Vendas
                     </div>
+                    <button class="nav-item" data-aba="aba-kanban">
+                        <i class="ph ph-kanban"></i> Pipeline
+                    </button>
                     <button class="nav-item" data-aba="aba-aprovacoes" style="justify-content: space-between;">
                         <span style="display:flex; align-items:center; gap:12px;">
                             <i class="ph ph-seal-check"></i> Aprovações
-                        </span> 
+                        </span>
                         <span class="badge badge-amarelo hidden" id="badge-aprov">0</span>
                     </button>
+
+                    <div class="sidebar-category cat-caixa" style="margin-top:20px;">
+                        <i class="ph ph-wallet"></i> Controle Financeiro
+                    </div>
                     <button class="nav-item" data-aba="aba-comissoes">
                         <i class="ph ph-money"></i> Caixa & Comissões
                     </button>
-                    
-                    <div class="sidebar-category cat-saude" style="margin-top:20px;">
-                        <i class="ph ph-heartbeat"></i> Saúde Financeira
-                    </div>
                     <button class="nav-item" data-aba="aba-despesas">
                         <i class="ph ph-receipt"></i> Contas a Pagar
                     </button>
                     <button class="nav-item" data-aba="aba-cobrancas">
-                        <i class="ph ph-warning-octagon"></i> Inadimplência & Estornos
+                        <i class="ph ph-warning-octagon"></i> Inadimplência
                     </button>
                     <button class="nav-item" data-aba="aba-mrr">
                         <i class="ph ph-arrows-clockwise"></i> Recorrência (MRR)
                     </button>
-                    
+
                     <div class="sidebar-category cat-auditoria" style="margin-top:20px;">
-                        <i class="ph ph-shield-chevron"></i> Auditoria & Operação
+                        <i class="ph ph-shield-chevron"></i> Auditoria
                     </div>
                     <button class="nav-item" data-aba="aba-contratos">
                         <i class="ph ph-folder-lock"></i> Cofre de Contratos
@@ -257,12 +252,33 @@
                     </button>
                 </div>
 
+                <!-- ================================================
+                     MÓDULO GERENTE (CEO)
+                     Acesso: gestor_geral — vê TUDO
+                     ================================================ -->
                 <div class="nav-group modulo-ceo hidden">
-                    <div class="sidebar-category cat-diretoria" style="margin-top: 20px;">
-                        <i class="ph ph-crown"></i> Diretoria Suprema
+
+                    <div class="sidebar-category cat-operacao">
+                        <i class="ph ph-rocket-launch"></i> Operação
+                    </div>
+                    <button class="nav-item" data-aba="aba-kanban">
+                        <i class="ph ph-kanban"></i> Pipeline
+                    </button>
+                    <button class="nav-item" data-aba="aba-aprovacoes" style="justify-content: space-between;">
+                        <span style="display:flex; align-items:center; gap:12px;">
+                            <i class="ph ph-seal-check"></i> Aprovações
+                        </span>
+                        <span class="badge badge-amarelo hidden" id="badge-aprov-ceo">0</span>
+                    </button>
+
+                    <div class="sidebar-category cat-diretoria" style="margin-top:20px;">
+                        <i class="ph ph-crown"></i> Diretoria
                     </div>
                     <button class="nav-item" data-aba="aba-chefao">
                         <i class="ph ph-chart-line-up"></i> Dashboard Geral
+                    </button>
+                    <button class="nav-item" data-aba="aba-arena">
+                        <i class="ph ph-trophy"></i> Arena de Vendas
                     </button>
                     <button class="nav-item" data-aba="aba-catalogo">
                         <i class="ph ph-percentage"></i> Produtos e Regras
@@ -270,28 +286,46 @@
                     <button class="nav-item" data-aba="aba-equipe">
                         <i class="ph ph-users"></i> Gestão de Equipes
                     </button>
-                    
-                    <div class="sidebar-category" style="margin-top: 20px; color: #4fc3f7; border-color: rgba(79, 195, 247, 0.2);">
-                        <i class="ph ph-robot" style="color: #4fc3f7;"></i> Automação & Export
-                    </div>
-                    <button class="nav-item" data-aba="aba-automacoes">
-                        <i class="ph ph-tree-structure"></i> Robô Central (Webhooks)
+                    <button class="nav-item" data-aba="aba-bonus">
+                        <i class="ph ph-gift"></i> Gestão de Bônus
                     </button>
+
+                    <div class="sidebar-category cat-caixa" style="margin-top:20px;">
+                        <i class="ph ph-wallet"></i> Financeiro
+                    </div>
+                    <button class="nav-item" data-aba="aba-comissoes">
+                        <i class="ph ph-money"></i> Caixa & Comissões
+                    </button>
+                    <button class="nav-item" data-aba="aba-despesas">
+                        <i class="ph ph-receipt"></i> Contas a Pagar
+                    </button>
+                    <button class="nav-item" data-aba="aba-cobrancas">
+                        <i class="ph ph-warning-octagon"></i> Inadimplência
+                    </button>
+                    <button class="nav-item" data-aba="aba-mrr">
+                        <i class="ph ph-arrows-clockwise"></i> Recorrência (MRR)
+                    </button>
+
+                    <div class="sidebar-category" style="margin-top:20px; color:#b388ff; border-color:rgba(179,136,255,0.2);">
+                        <i class="ph ph-brain" style="color:#b388ff;"></i> Inteligência
+                    </div>
                     <button class="nav-item" data-aba="aba-auditoria">
                         <i class="ph ph-shield-check"></i> Auditoria de Leads
                     </button>
                     <button class="nav-item" data-aba="aba-exportacao">
-                        <i class="ph ph-file-csv"></i> Exportação de Relatórios
-                    </button>
-                    
-                    <div class="sidebar-category" style="margin-top: 20px; color: #b388ff; border-color: rgba(179, 136, 255, 0.2);">
-                        <i class="ph ph-brain" style="color: #b388ff;"></i> Inteligência
-                    </div>
-                    <button class="nav-item" data-aba="aba-config">
-                        <i class="ph ph-paint-brush"></i> White-Label
+                        <i class="ph ph-file-csv"></i> Exportação
                     </button>
                     <button class="nav-item" data-aba="aba-ia-relatorios" style="color:#b388ff;">
-                        <i class="ph ph-magic-wand"></i> Relatórios Preditivos (IA)
+                        <i class="ph ph-magic-wand"></i> IA Preditiva
+                    </button>
+                    <button class="nav-item" data-aba="aba-contratos">
+                        <i class="ph ph-folder-lock"></i> Cofre de Contratos
+                    </button>
+                    <button class="nav-item" data-aba="aba-auditoria-descontos">
+                        <i class="ph ph-scissors"></i> Auditoria de Descontos
+                    </button>
+                    <button class="nav-item" data-aba="aba-config">
+                        <i class="ph ph-paint-brush"></i> White-Label
                     </button>
                 </div>
             </nav>
@@ -780,14 +814,45 @@
                                     <th>Produto Referência</th>
                                     <th>Justificativa</th>
                                     <th style="text-align:right;">Valor Subtraído</th>
+                                    <th style="text-align:center;">Ação</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-estornos">
                                 <tr>
-                                    <td colspan="4" style="text-align:center; padding:30px; color:var(--muted);">Nenhum estorno registrado na base.</td>
+                                    <td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">Nenhum estorno registrado na base.</td>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Seção colapsável: estornos arquivados -->
+                    <div id="secao-estornos-arquivados" style="display:none; margin-top:24px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px;
+                                    background:rgba(122,131,161,0.06); border:1px solid var(--border2);
+                                    border-radius:var(--r-lg) var(--r-lg) 0 0; cursor:pointer;"
+                             onclick="const b=document.getElementById('tbody-arq-wrap'); b.style.display=b.style.display==='none'?'block':'none'; this.querySelector('.arq-chevron').style.transform=b.style.display==='none'?'rotate(0deg)':'rotate(180deg)'">
+                            <span style="font-size:13px; font-weight:700; color:var(--muted); display:flex; align-items:center; gap:8px;">
+                                <i class="ph ph-archive"></i>
+                                Histórico Arquivado
+                                <span style="background:rgba(122,131,161,0.15); padding:2px 8px; border-radius:10px; font-size:11px;" id="count-estornos-arquivados">0</span>
+                            </span>
+                            <i class="ph ph-caret-down arq-chevron" style="color:var(--muted); transition:transform .2s;"></i>
+                        </div>
+                        <div id="tbody-arq-wrap" style="display:block;">
+                            <table class="lista-table" style="border-radius:0 0 var(--r-lg) var(--r-lg); overflow:hidden;">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Produto</th>
+                                        <th>Justificativa</th>
+                                        <th style="text-align:right;">Valor</th>
+                                        <th>Arquivado em</th>
+                                        <th style="text-align:center;">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-estornos-arquivados"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
 
@@ -1208,15 +1273,94 @@
                     </div>
                 </section>
 
+                <section id="aba-okrs" class="aba-conteudo hidden">
+                    <div class="page-header">
+                        <div>
+                            <div class="page-title" style="color: var(--accent);">OKRs Corporativos 🎯</div>
+                            <div class="page-sub">Defina e acompanhe os Objetivos e Resultados-Chave do trimestre.</div>
+                        </div>
+                    </div>
+                    <div class="empty-state">
+                        <i class="ph ph-flag-banner"></i>
+                        <p>Módulo de Metas Estratégicas em desenvolvimento...</p>
+                    </div>
+                </section>
+                
+                <section id="aba-playbook" class="aba-conteudo hidden">
+                    <div class="page-header">
+                        <div>
+                            <div class="page-title" style="color: var(--novos);">Playbook de Vendas 📚</div>
+                            <div class="page-sub">Centralize os roteiros, scripts e treinamentos da sua operação.</div>
+                        </div>
+                    </div>
+                    <div class="empty-state">
+                        <i class="ph ph-graduation-cap"></i>
+                        <p>Universidade Corporativa em construção...</p>
+                    </div>
+                </section>
+                
+                <section id="aba-integracoes" class="aba-conteudo hidden">
+                    <div class="page-header">
+                        <div>
+                            <div class="page-title" style="color: var(--purple);">Hub de Integrações (API) 🔌</div>
+                            <div class="page-sub">Conecte o HAPSIS com N8N, Zapier, Meta Ads e outras ferramentas.</div>
+                        </div>
+                    </div>
+                    <div class="empty-state">
+                        <i class="ph ph-plugs-connected"></i>
+                        <p>Painel de API e Integrações sendo configurado...</p>
+                    </div>
+                </section>
+
             </main>
         </div>
     </div>
 
+    <!-- Modal Editar Produto -->
+    <div id="modal-editar-produto" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span class="modal-title"><i class="ph ph-pencil-simple" style="color:var(--novos);"></i> Editar Produto</span>
+                <button class="btn-fechar" onclick="document.getElementById('modal-editar-produto').classList.remove('ativa')">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <form id="form-editar-produto">
+                <input type="hidden" id="inp-edit-prod-id" />
+                <div class="campo">
+                    <label for="inp-edit-prod-nome">Nome do Produto</label>
+                    <input type="text" id="inp-edit-prod-nome" required />
+                </div>
+                <div style="display:flex; gap:16px;">
+                    <div class="campo">
+                        <label for="inp-edit-prod-preco">Preço Base (R$)</label>
+                        <input type="number" id="inp-edit-prod-preco" step="0.01" required />
+                    </div>
+                    <div class="campo">
+                        <label for="inp-edit-prod-comissao">Comissão (%)</label>
+                        <input type="number" id="inp-edit-prod-comissao" step="0.1" required />
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="background:var(--novos); color:#0a0c11;">
+                    <i class="ph ph-check-circle"></i> Salvar Alterações
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL: NOVO LEAD
+         FIX-2: Adicionado id="btn-fechar-modal" no botão fechar.
+         O JS buscava esse ID via getElementById mas não encontrava,
+         causando erro silencioso (a função de fechar inline ainda
+         funcionava, mas o listener do JS ficava sem referência).
+         ============================================================ -->
     <div id="modal-lead" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
                 <span class="modal-title">Novo Cliente</span>
-                <button class="btn-fechar" onclick="document.getElementById('modal-lead').classList.remove('ativa')">
+                <!-- FIX-2: id="btn-fechar-modal" adicionado -->
+                <button class="btn-fechar" id="btn-fechar-modal" onclick="document.getElementById('modal-lead').classList.remove('ativa')">
                     <i class="ph ph-x"></i>
                 </button>
             </div>
@@ -1233,8 +1377,8 @@
                 <div style="display:flex; gap:16px;">
                     <div class="campo" style="flex:2;">
                         <label for="inp-produto">Produto de Interesse</label>
-                        <select id="inp-produto" required>
-                            <option value="">Carregando...</option>
+                        <select id="inp-produto">
+                            <option value="">Selecione um produto (opcional)...</option>
                         </select>
                     </div>
                     <div class="campo" style="flex:1;">
@@ -1344,7 +1488,22 @@
                 
                 <div class="drawer-section" style="border-color: var(--accent);">
                     <h4><i class="ph ph-calendar-plus" style="color: var(--accent);"></i> Próximo Follow-up</h4>
-                    <input type="date" id="drawer-data-followup" style="width: 100%; padding: 14px; border-radius: 8px; background: rgba(245,197,24,0.05); border: 1px solid var(--accent); color: var(--accent); font-weight: bold; cursor: pointer; outline:none;" />
+                    <input type="date" id="drawer-data-followup" />
+                </div>
+
+                <!-- [FIX-BUG-4] Campo de vencimento — aparece só para clientes FECHADOS -->
+                <div id="drawer-secao-vencimento" class="drawer-section" style="border-color: var(--danger); display:none;">
+                    <h4><i class="ph ph-calendar-x" style="color: var(--danger);"></i> Data de Vencimento (Boleto/Cobrança)</h4>
+
+                    <!-- Alerta automático — aparece quando vencimento passou -->
+                    <div id="drawer-alerta-vencido" style="display:none; align-items:center; gap:8px; background:rgba(240,82,82,0.1); border:1px solid rgba(240,82,82,0.35); border-radius:8px; padding:10px 14px; font-size:13px; color:var(--danger); margin-bottom:12px; font-weight:600;"></div>
+
+                    <input type="date" id="drawer-data-vencimento" />
+                    <p style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.5;">
+                        <i class="ph ph-info"></i>
+                        Defina a data de vencimento do boleto ou próxima cobrança recorrente.
+                        O sistema detecta automaticamente quando a data passar e exibe o cliente na tela de Cobranças.
+                    </p>
                 </div>
                 
                 <div class="drawer-section" style="border-color: var(--novos);">
@@ -1790,11 +1949,12 @@
         </div>
     </div>
 
-    <div id="cmd-palette">
+    <!-- Command Palette -->
+    <div id="cmd-palette" onclick="if(event.target===this)this.classList.remove('ativa')">
         <div class="cmd-box">
             <div class="cmd-input-wrap">
                 <i class="ph ph-magic-wand"></i>
-                <input type="text" id="cmd-input" placeholder="Comandos..." autocomplete="off" />
+                <input type="text" id="cmd-input" placeholder="Comandos... (ex: kanban, comissões, IA)" autocomplete="off" />
                 <span class="cmd-tag-esc">ESC</span>
             </div>
             <div class="cmd-list" id="cmd-list"></div>
