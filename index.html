@@ -270,15 +270,15 @@
                         </span>
                         <span class="badge badge-amarelo hidden" id="badge-aprov-ceo">0</span>
                     </button>
+                    <button class="nav-item" data-aba="aba-arena">
+                        <i class="ph ph-trophy"></i> Arena de Vendas
+                    </button>
 
                     <div class="sidebar-category cat-diretoria" style="margin-top:20px;">
                         <i class="ph ph-crown"></i> Diretoria
                     </div>
                     <button class="nav-item" data-aba="aba-chefao">
                         <i class="ph ph-chart-line-up"></i> Dashboard Geral
-                    </button>
-                    <button class="nav-item" data-aba="aba-arena">
-                        <i class="ph ph-trophy"></i> Arena de Vendas
                     </button>
                     <button class="nav-item" data-aba="aba-catalogo">
                         <i class="ph ph-percentage"></i> Produtos e Regras
@@ -305,21 +305,34 @@
                     <button class="nav-item" data-aba="aba-mrr">
                         <i class="ph ph-arrows-clockwise"></i> Recorrência (MRR)
                     </button>
+                    <button class="nav-item" data-aba="aba-contratos">
+                        <i class="ph ph-folder-lock"></i> Cofre de Contratos
+                    </button>
 
                     <div class="sidebar-category" style="margin-top:20px; color:#b388ff; border-color:rgba(179,136,255,0.2);">
-                        <i class="ph ph-brain" style="color:#b388ff;"></i> Inteligência
+                        <i class="ph ph-brain" style="color:#b388ff;"></i> Estratégia
                     </div>
+                    <button class="nav-item" data-aba="aba-okrs">
+                        <i class="ph ph-flag-banner"></i> OKRs Corporativos
+                    </button>
+                    <button class="nav-item" data-aba="aba-playbook">
+                        <i class="ph ph-graduation-cap"></i> Playbook de Vendas
+                    </button>
+                    <button class="nav-item" data-aba="aba-automacoes">
+                        <i class="ph ph-robot"></i> Automações
+                    </button>
+
+                    <div class="sidebar-category" style="margin-top:20px; color:#b388ff; border-color:rgba(179,136,255,0.2);">
+                        <i class="ph ph-sparkle" style="color:#b388ff;"></i> Inteligência Artificial
+                    </div>
+                    <button class="nav-item" data-aba="aba-ia-relatorios" style="color:#b388ff; font-weight:700;">
+                        <i class="ph ph-magic-wand"></i> IA Preditiva
+                    </button>
                     <button class="nav-item" data-aba="aba-auditoria">
                         <i class="ph ph-shield-check"></i> Auditoria de Leads
                     </button>
                     <button class="nav-item" data-aba="aba-exportacao">
                         <i class="ph ph-file-csv"></i> Exportação
-                    </button>
-                    <button class="nav-item" data-aba="aba-ia-relatorios" style="color:#b388ff;">
-                        <i class="ph ph-magic-wand"></i> IA Preditiva
-                    </button>
-                    <button class="nav-item" data-aba="aba-contratos">
-                        <i class="ph ph-folder-lock"></i> Cofre de Contratos
                     </button>
                     <button class="nav-item" data-aba="aba-auditoria-descontos">
                         <i class="ph ph-scissors"></i> Auditoria de Descontos
@@ -538,16 +551,24 @@
                     
                     <div class="stats-grid" style="margin-bottom: 24px;">
                         <div class="stat-card" style="border-left: 4px solid var(--novos); background: rgba(79,195,247,0.05);">
-                            <div class="stat-label">Em Onboarding</div>
-                            <div class="stat-val" id="stat-pv-on">0</div>
+                            <div class="stat-label">Clientes Ativos</div>
+                            <div class="stat-val azul" id="stat-pv-ativos">0</div>
                         </div>
                         <div class="stat-card" style="border-left: 4px solid var(--negociacao); background: rgba(255,183,77,0.05);">
-                            <div class="stat-label">Acompanhamento Ativo</div>
-                            <div class="stat-val" id="stat-pv-ac">0</div>
+                            <div class="stat-label">Em Onboarding</div>
+                            <div class="stat-val" id="stat-pv-on">0</div>
                         </div>
                         <div class="stat-card" style="border-left: 4px solid #b388ff; background: rgba(179,136,255,0.05);">
                             <div class="stat-label">Prontos para Upsell</div>
                             <div class="stat-val" id="stat-pv-up" style="color:#b388ff;">0</div>
+                        </div>
+                        <div class="stat-card" style="border-left: 4px solid var(--danger); background: rgba(240,82,82,0.05);">
+                            <div class="stat-label">Churn Rate</div>
+                            <div class="stat-val" id="stat-pv-churn" style="color:var(--danger);">0%</div>
+                        </div>
+                        <div class="stat-card" style="border-left: 4px solid var(--fechados); background: rgba(74,222,128,0.05);">
+                            <div class="stat-label">LTV Médio por Cliente</div>
+                            <div class="stat-val verde" id="stat-pv-ltv">R$ 0</div>
                         </div>
                     </div>
                     
@@ -1194,15 +1215,85 @@
                     <div class="page-header">
                         <div>
                             <div class="page-title" style="color:#b388ff;">
-                                <i class="ph ph-magic-wand"></i> IA Preditiva
+                                <i class="ph ph-sparkle"></i> Inteligência Artificial
                             </div>
+                            <div class="page-sub">Análises preditivas e insights em tempo real da sua operação.</div>
                         </div>
                     </div>
-                    <div class="ia-report-card">
-                        <div class="ia-report-header">
-                            <h2>Diagnosticando...</h2>
+
+                    <!-- Cards de ação rápida -->
+                    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:16px; margin-bottom:28px;">
+
+                        <div onclick="window.rodarIA('diagnostico')" style="cursor:pointer; background:linear-gradient(135deg, rgba(179,136,255,0.15), rgba(124,58,237,0.08)); border:1px solid rgba(179,136,255,0.3); border-radius:16px; padding:24px; transition:.25s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 40px rgba(179,136,255,0.2)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+                            <div style="font-size:32px; margin-bottom:12px;">🔬</div>
+                            <div style="font-weight:800; color:#b388ff; font-family:var(--font-head); font-size:15px; margin-bottom:6px;">Diagnóstico Completo</div>
+                            <div style="font-size:12px; color:var(--muted); line-height:1.5;">Análise geral da operação: pontos fortes, fracos e oportunidades ocultas.</div>
                         </div>
-                        <div class="ia-report-text">Aguarde...</div>
+
+                        <div onclick="window.rodarIA('funil')" style="cursor:pointer; background:linear-gradient(135deg, rgba(56,189,248,0.12), rgba(14,165,233,0.06)); border:1px solid rgba(56,189,248,0.25); border-radius:16px; padding:24px; transition:.25s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 40px rgba(56,189,248,0.15)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+                            <div style="font-size:32px; margin-bottom:12px;">📊</div>
+                            <div style="font-weight:800; color:var(--novos); font-family:var(--font-head); font-size:15px; margin-bottom:6px;">Análise do Funil</div>
+                            <div style="font-size:12px; color:var(--muted); line-height:1.5;">Onde os leads estão travando, taxa de conversão por etapa e gargalos.</div>
+                        </div>
+
+                        <div onclick="window.rodarIA('vendedores')" style="cursor:pointer; background:linear-gradient(135deg, rgba(245,197,24,0.12), rgba(217,174,21,0.06)); border:1px solid rgba(245,197,24,0.25); border-radius:16px; padding:24px; transition:.25s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 40px rgba(245,197,24,0.15)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+                            <div style="font-size:32px; margin-bottom:12px;">🏆</div>
+                            <div style="font-weight:800; color:var(--accent); font-family:var(--font-head); font-size:15px; margin-bottom:6px;">Performance da Equipe</div>
+                            <div style="font-size:12px; color:var(--muted); line-height:1.5;">Quem está performando, quem precisa de suporte e padrões de comportamento.</div>
+                        </div>
+
+                        <div onclick="window.rodarIA('financeiro')" style="cursor:pointer; background:linear-gradient(135deg, rgba(74,222,128,0.12), rgba(34,197,94,0.06)); border:1px solid rgba(74,222,128,0.25); border-radius:16px; padding:24px; transition:.25s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 40px rgba(74,222,128,0.15)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+                            <div style="font-size:32px; margin-bottom:12px;">💰</div>
+                            <div style="font-weight:800; color:var(--fechados); font-family:var(--font-head); font-size:15px; margin-bottom:6px;">Saúde Financeira</div>
+                            <div style="font-size:12px; color:var(--muted); line-height:1.5;">Projeção de receita, risco de churn e recomendações para aumentar o caixa.</div>
+                        </div>
+
+                        <div onclick="window.rodarIA('retencao')" style="cursor:pointer; background:linear-gradient(135deg, rgba(240,82,82,0.12), rgba(220,38,38,0.06)); border:1px solid rgba(240,82,82,0.25); border-radius:16px; padding:24px; transition:.25s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 40px rgba(240,82,82,0.15)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+                            <div style="font-size:32px; margin-bottom:12px;">🔥</div>
+                            <div style="font-weight:800; color:var(--danger); font-family:var(--font-head); font-size:15px; margin-bottom:6px;">Risco de Churn</div>
+                            <div style="font-size:12px; color:var(--muted); line-height:1.5;">Clientes com maior probabilidade de cancelar e como agir antes que isso aconteça.</div>
+                        </div>
+
+                        <div onclick="window.rodarIA('livre')" style="cursor:pointer; background:linear-gradient(135deg, rgba(251,146,60,0.12), rgba(249,115,22,0.06)); border:1px solid rgba(251,146,60,0.25); border-radius:16px; padding:24px; transition:.25s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 40px rgba(251,146,60,0.15)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+                            <div style="font-size:32px; margin-bottom:12px;">💬</div>
+                            <div style="font-weight:800; color:#fb923c; font-family:var(--font-head); font-size:15px; margin-bottom:6px;">Pergunta Livre</div>
+                            <div style="font-size:12px; color:var(--muted); line-height:1.5;">Faça qualquer pergunta sobre sua operação. A IA responde com base nos seus dados reais.</div>
+                        </div>
+                    </div>
+
+                    <!-- Campo de pergunta livre (aparece ao clicar) -->
+                    <div id="ia-input-livre" style="display:none; margin-bottom:20px;">
+                        <div style="display:flex; gap:12px;">
+                            <input id="ia-pergunta-livre" type="text" placeholder="Ex: Qual o perfil do meu cliente ideal? Quais produtos vendem mais na segunda-feira?"
+                                style="flex:1; padding:14px 18px; background:var(--bg2); border:1px solid rgba(251,146,60,0.4); border-radius:12px; color:var(--text); font-size:14px; outline:none;"
+                                onkeydown="if(event.key==='Enter') window.enviarPerguntaLivre()"/>
+                            <button onclick="window.enviarPerguntaLivre()" style="padding:14px 24px; background:linear-gradient(135deg,#fb923c,#f97316); border:none; border-radius:12px; color:#fff; font-weight:700; font-size:14px; cursor:pointer; white-space:nowrap;">
+                                <i class="ph ph-paper-plane-tilt"></i> Enviar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Área de resposta da IA -->
+                    <div id="ia-resposta-container" style="display:none;">
+                        <div style="background:linear-gradient(135deg, rgba(179,136,255,0.08), rgba(16,19,28,0.95)); border:1px solid rgba(179,136,255,0.25); border-radius:16px; overflow:hidden;">
+                            <div style="padding:16px 20px; border-bottom:1px solid rgba(179,136,255,0.15); display:flex; align-items:center; justify-content:space-between;">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <div style="width:32px; height:32px; background:linear-gradient(135deg,#b388ff,#7c3aed); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px;">✨</div>
+                                    <div>
+                                        <div id="ia-titulo-analise" style="font-weight:800; color:#b388ff; font-family:var(--font-head); font-size:14px;">Análise da IA</div>
+                                        <div style="font-size:11px; color:var(--muted);">Baseada nos seus dados reais em tempo real</div>
+                                    </div>
+                                </div>
+                                <button onclick="document.getElementById('ia-resposta-container').style.display='none'" style="background:transparent; border:none; color:var(--muted); cursor:pointer; padding:4px; border-radius:6px;">
+                                    <i class="ph ph-x"></i>
+                                </button>
+                            </div>
+                            <div id="ia-resposta-texto" style="padding:24px; font-size:14px; color:var(--text2); line-height:1.8; min-height:120px;">
+                                <div style="display:flex; align-items:center; gap:10px; color:var(--muted);">
+                                    <i class="ph ph-spinner ph-spin" style="font-size:20px;"></i> Analisando seus dados...
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -1235,40 +1326,121 @@
                 <section id="aba-automacoes" class="aba-conteudo hidden">
                     <div class="page-header">
                         <div>
-                            <div class="page-title" style="color: var(--novos);">Central de Automações (Robô) 🤖</div>
-                            <div class="page-sub">Configure aprovações instantâneas e webhooks para plataformas de pagamento.</div>
+                            <div class="page-title" style="color:var(--novos);"><i class="ph ph-robot"></i> Central de Automações</div>
+                            <div class="page-sub">Configure webhooks de pagamento e distribuição automática de leads.</div>
                         </div>
-                        <button class="btn-primary" style="width:auto; background:var(--novos); color:#10121a;" onclick="mostrarToast('Configurações do Robô salvas com sucesso!', 'ok')">
-                            Salvar Automações
-                        </button>
                     </div>
-                    
-                    <div class="tabela-wrapper" style="padding: 24px; margin-bottom: 24px;">
-                        <h3 style="margin-bottom: 20px; color:var(--text); font-family:var(--font-head); font-size: 16px;">Webhooks & Plataformas</h3>
-                        <div class="campo" style="margin-bottom: 0;">
-                            <label>URL de Recepção (Endpoint) - Cole isso na Kirvano/Asaas/Kiwify</label>
-                            <div style="display:flex; gap:10px;">
-                                <input type="text" value="https://api.hapsis.com/v1/webhooks/pay" readonly style="color:var(--novos); font-family:monospace; font-size: 14px; background: rgba(56, 189, 248, 0.05);" />
-                                <button class="btn-cancel" style="width:auto;" onclick="mostrarToast('URL Copiada para a área de transferência!', 'ok')"><i class="ph ph-copy"></i> Copiar</button>
+
+                    <!-- WEBHOOKS -->
+                    <div class="tabela-wrapper" style="padding:28px; margin-bottom:24px;">
+                        <h3 style="margin-bottom:6px; color:var(--text); font-family:var(--font-head); font-size:16px; display:flex; align-items:center; gap:8px;">
+                            <i class="ph ph-webhooks-logo" style="color:var(--novos);"></i> Webhooks de Pagamento
+                        </h3>
+                        <p style="color:var(--muted); font-size:13px; margin-bottom:24px;">Cole a URL abaixo na plataforma de pagamento. Quando um pagamento for confirmado, o lead é aprovado automaticamente no HAPSIS.</p>
+
+                        <div style="display:flex; flex-direction:column; gap:20px;">
+                            <!-- Kirvano -->
+                            <div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:20px;">
+                                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <div style="width:36px; height:36px; background:rgba(56,189,248,.12); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                                            <i class="ph ph-lightning" style="color:var(--novos); font-size:18px;"></i>
+                                        </div>
+                                        <div>
+                                            <div style="font-weight:700; color:var(--text); font-size:14px;">Kirvano</div>
+                                            <div style="font-size:11px; color:var(--muted);">Checkout & Pagamentos</div>
+                                        </div>
+                                    </div>
+                                    <span style="background:rgba(74,222,128,.1); color:var(--fechados); border:1px solid rgba(74,222,128,.3); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700;">Suportado</span>
+                                </div>
+                                <div style="display:flex; gap:10px;">
+                                    <input id="wh-kirvano" type="text" readonly
+                                        value="https://bskgqlhducfxfipflpqm.supabase.co/functions/v1/hapsis-webhook?src=kirvano"
+                                        style="font-family:monospace; font-size:12px; color:var(--novos); background:rgba(56,189,248,.04); border:1px solid rgba(56,189,248,.2); border-radius:8px; padding:10px 14px; flex:1; outline:none;"/>
+                                    <button onclick="window.copiarWebhook('wh-kirvano')" style="background:rgba(56,189,248,.1); border:1px solid rgba(56,189,248,.3); color:var(--novos); padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:700; font-size:13px; white-space:nowrap; transition:.2s;" onmouseover="this.style.background='rgba(56,189,248,.2)'" onmouseout="this.style.background='rgba(56,189,248,.1)'">
+                                        <i class="ph ph-copy"></i> Copiar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Kiwify -->
+                            <div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:20px;">
+                                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <div style="width:36px; height:36px; background:rgba(179,136,255,.12); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                                            <i class="ph ph-storefront" style="color:#b388ff; font-size:18px;"></i>
+                                        </div>
+                                        <div>
+                                            <div style="font-weight:700; color:var(--text); font-size:14px;">Kiwify</div>
+                                            <div style="font-size:11px; color:var(--muted);">Marketplace Digital</div>
+                                        </div>
+                                    </div>
+                                    <span style="background:rgba(74,222,128,.1); color:var(--fechados); border:1px solid rgba(74,222,128,.3); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700;">Suportado</span>
+                                </div>
+                                <div style="display:flex; gap:10px;">
+                                    <input id="wh-kiwify" type="text" readonly
+                                        value="https://bskgqlhducfxfipflpqm.supabase.co/functions/v1/hapsis-webhook?src=kiwify"
+                                        style="font-family:monospace; font-size:12px; color:#b388ff; background:rgba(179,136,255,.04); border:1px solid rgba(179,136,255,.2); border-radius:8px; padding:10px 14px; flex:1; outline:none;"/>
+                                    <button onclick="window.copiarWebhook('wh-kiwify')" style="background:rgba(179,136,255,.1); border:1px solid rgba(179,136,255,.3); color:#b388ff; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:700; font-size:13px; white-space:nowrap; transition:.2s;" onmouseover="this.style.background='rgba(179,136,255,.2)'" onmouseout="this.style.background='rgba(179,136,255,.1)'">
+                                        <i class="ph ph-copy"></i> Copiar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Asaas -->
+                            <div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:20px;">
+                                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <div style="width:36px; height:36px; background:rgba(245,197,24,.12); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                                            <i class="ph ph-bank" style="color:var(--accent); font-size:18px;"></i>
+                                        </div>
+                                        <div>
+                                            <div style="font-weight:700; color:var(--text); font-size:14px;">Asaas</div>
+                                            <div style="font-size:11px; color:var(--muted);">Boleto, Pix & Cartão</div>
+                                        </div>
+                                    </div>
+                                    <span style="background:rgba(74,222,128,.1); color:var(--fechados); border:1px solid rgba(74,222,128,.3); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700;">Suportado</span>
+                                </div>
+                                <div style="display:flex; gap:10px;">
+                                    <input id="wh-asaas" type="text" readonly
+                                        value="https://bskgqlhducfxfipflpqm.supabase.co/functions/v1/hapsis-webhook?src=asaas"
+                                        style="font-family:monospace; font-size:12px; color:var(--accent); background:rgba(245,197,24,.04); border:1px solid rgba(245,197,24,.2); border-radius:8px; padding:10px 14px; flex:1; outline:none;"/>
+                                    <button onclick="window.copiarWebhook('wh-asaas')" style="background:rgba(245,197,24,.1); border:1px solid rgba(245,197,24,.3); color:var(--accent); padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:700; font-size:13px; white-space:nowrap; transition:.2s;" onmouseover="this.style.background='rgba(245,197,24,.2)'" onmouseout="this.style.background='rgba(245,197,24,.1)'">
+                                        <i class="ph ph-copy"></i> Copiar
+                                    </button>
+                                </div>
                             </div>
                         </div>
+
+                        <div style="margin-top:20px; background:rgba(245,197,24,.06); border:1px solid rgba(245,197,24,.2); border-radius:10px; padding:14px 18px; display:flex; gap:10px; align-items:flex-start;">
+                            <i class="ph ph-info" style="color:var(--accent); font-size:18px; flex-shrink:0; margin-top:1px;"></i>
+                            <p style="font-size:12px; color:var(--muted); line-height:1.6; margin:0;">
+                                <strong style="color:var(--text);">Como funciona:</strong> Cole a URL na seção de "Webhooks / Notificações" da sua plataforma de pagamento. Quando um pagamento for confirmado, o HAPSIS aprova automaticamente o lead correspondente, registra no Livro-Caixa e move para o Pós-Venda. O lead é identificado pelo WhatsApp cadastrado.
+                            </p>
+                        </div>
                     </div>
-                    
-                    <div class="tabela-wrapper" style="padding: 24px;">
-                        <h3 style="margin-bottom: 20px; color:var(--text); font-family:var(--font-head); font-size: 16px;">Regras Automáticas do Sistema</h3>
-                        <div style="display:flex; flex-direction:column; gap:16px;">
-                            <label style="display:flex; align-items:center; gap:12px; cursor:pointer; background: var(--bg2); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
-                                <input type="checkbox" checked style="width:20px; height:20px; accent-color:var(--novos);" />
-                                <span style="color: var(--text2); font-size: 14px;"><strong style="color:var(--text);">Aprovação Automática:</strong> Quando a plataforma externa confirmar o pagamento via Webhook, aprovar a venda no Financeiro automaticamente e jogar pro Pós-Venda.</span>
+
+                    <!-- ROUND ROBIN -->
+                    <div class="tabela-wrapper" style="padding:28px;">
+                        <h3 style="margin-bottom:6px; color:var(--text); font-family:var(--font-head); font-size:16px; display:flex; align-items:center; gap:8px;">
+                            <i class="ph ph-arrows-clockwise" style="color:var(--accent);"></i> Roleta Round-Robin
+                        </h3>
+                        <p style="color:var(--muted); font-size:13px; margin-bottom:20px;">Distribui novos leads automaticamente entre os vendedores ativos de forma igualitária.</p>
+
+                        <div style="display:flex; align-items:center; justify-content:space-between; background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:18px 22px; margin-bottom:16px;">
+                            <div>
+                                <div style="font-weight:700; color:var(--text); font-size:14px; margin-bottom:4px;">Ativar Distribuição Automática</div>
+                                <div style="font-size:12px; color:var(--muted);">Novos leads são distribuídos em rodízio entre todos os vendedores</div>
+                            </div>
+                            <label style="position:relative; display:inline-block; width:48px; height:26px; cursor:pointer;">
+                                <input type="checkbox" id="toggle-roundrobin" style="opacity:0; width:0; height:0;" onchange="window.salvarConfigRoundRobin(this.checked)">
+                                <span id="rr-track" style="position:absolute; inset:0; background:var(--border2); border-radius:26px; transition:.3s;"></span>
+                                <span id="rr-thumb" style="position:absolute; left:3px; top:3px; width:20px; height:20px; background:#fff; border-radius:50%; transition:.3s;"></span>
                             </label>
-                            <label style="display:flex; align-items:center; gap:12px; cursor:pointer; background: var(--bg2); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
-                                <input type="checkbox" checked style="width:20px; height:20px; accent-color:var(--novos);" />
-                                <span style="color: var(--text2); font-size: 14px;"><strong style="color:var(--text);">Cobrança Automática:</strong> Mover cliente para a Central de Inadimplência automaticamente se a plataforma avisar que o boleto venceu ou o cartão falhou.</span>
-                            </label>
-                            <label style="display:flex; align-items:center; gap:12px; cursor:pointer; background: var(--bg2); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
-                                <input type="checkbox" style="width:20px; height:20px; accent-color:var(--novos);" />
-                                <span style="color: var(--text2); font-size: 14px;"><strong style="color:var(--text);">Roleta de SDR (Round-Robin):</strong> Distribuir leads novos de forma automática e igualitária entre todos os vendedores (closers) ativos no sistema.</span>
-                            </label>
+                        </div>
+
+                        <div id="rr-equipe-lista" style="display:flex; flex-direction:column; gap:8px;">
+                            <p style="color:var(--muted); font-size:13px; text-align:center; padding:20px;"><i class="ph ph-spinner ph-spin"></i> Carregando equipe...</p>
                         </div>
                     </div>
                 </section>
@@ -1276,43 +1448,236 @@
                 <section id="aba-okrs" class="aba-conteudo hidden">
                     <div class="page-header">
                         <div>
-                            <div class="page-title" style="color: var(--accent);">OKRs Corporativos 🎯</div>
-                            <div class="page-sub">Defina e acompanhe os Objetivos e Resultados-Chave do trimestre.</div>
+                            <div class="page-title" style="color:var(--accent);"><i class="ph ph-flag-banner"></i> OKRs Corporativos</div>
+                            <div class="page-sub">Defina objetivos e acompanhe resultados-chave por trimestre.</div>
+                        </div>
+                        <button class="btn-primary" style="width:auto;" onclick="document.getElementById('modal-okr').classList.add('ativa')">
+                            <i class="ph ph-plus"></i> Novo OKR
+                        </button>
+                    </div>
+
+                    <!-- Seletor de trimestre -->
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
+                        <span style="color:var(--muted); font-size:13px; font-weight:700;">TRIMESTRE:</span>
+                        <div style="display:flex; gap:8px;" id="okr-trimestres">
+                            <button onclick="window.selecionarTrimestre('Q1')" class="okr-trim-btn" data-trim="Q1" style="padding:6px 16px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; font-weight:700; cursor:pointer; transition:.2s;">Q1</button>
+                            <button onclick="window.selecionarTrimestre('Q2')" class="okr-trim-btn" data-trim="Q2" style="padding:6px 16px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; font-weight:700; cursor:pointer; transition:.2s;">Q2</button>
+                            <button onclick="window.selecionarTrimestre('Q3')" class="okr-trim-btn" data-trim="Q3" style="padding:6px 16px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; font-weight:700; cursor:pointer; transition:.2s;">Q3</button>
+                            <button onclick="window.selecionarTrimestre('Q4')" class="okr-trim-btn" data-trim="Q4" style="padding:6px 16px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; font-weight:700; cursor:pointer; transition:.2s;">Q4</button>
                         </div>
                     </div>
-                    <div class="empty-state">
-                        <i class="ph ph-flag-banner"></i>
-                        <p>Módulo de Metas Estratégicas em desenvolvimento...</p>
+
+                    <div id="okr-lista" style="display:flex; flex-direction:column; gap:20px;">
+                        <div style="text-align:center; padding:60px 20px; color:var(--muted);">
+                            <i class="ph ph-flag-banner" style="font-size:48px; display:block; margin-bottom:12px; opacity:.3;"></i>
+                            <p style="font-size:15px;">Nenhum OKR para este trimestre.</p>
+                            <p style="font-size:13px; margin-top:4px;">Clique em "Novo OKR" para começar.</p>
+                        </div>
                     </div>
                 </section>
                 
                 <section id="aba-playbook" class="aba-conteudo hidden">
                     <div class="page-header">
                         <div>
-                            <div class="page-title" style="color: var(--novos);">Playbook de Vendas 📚</div>
-                            <div class="page-sub">Centralize os roteiros, scripts e treinamentos da sua operação.</div>
+                            <div class="page-title" style="color:var(--novos);"><i class="ph ph-graduation-cap"></i> Playbook de Vendas</div>
+                            <div class="page-sub">Scripts, objeções e treinamentos centralizados para toda a equipe.</div>
                         </div>
+                        <button class="btn-primary" style="width:auto;" onclick="document.getElementById('modal-playbook').classList.add('ativa')">
+                            <i class="ph ph-plus"></i> Novo Script
+                        </button>
                     </div>
-                    <div class="empty-state">
-                        <i class="ph ph-graduation-cap"></i>
-                        <p>Universidade Corporativa em construção...</p>
+
+                    <!-- Filtro de categorias -->
+                    <div style="display:flex; gap:8px; margin-bottom:24px; flex-wrap:wrap;" id="playbook-cats">
+                        <button onclick="window.filtrarPlaybook('todos')" class="pb-cat-btn ativa" data-cat="todos" style="padding:6px 16px; border-radius:20px; border:1px solid var(--accent); background:rgba(245,197,24,.12); color:var(--accent); font-size:12px; font-weight:700; cursor:pointer;">Todos</button>
+                        <button onclick="window.filtrarPlaybook('abertura')" class="pb-cat-btn" data-cat="abertura" style="padding:6px 16px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; font-weight:700; cursor:pointer;">Abertura</button>
+                        <button onclick="window.filtrarPlaybook('objecoes')" class="pb-cat-btn" data-cat="objecoes" style="padding:6px 16px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; font-weight:700; cursor:pointer;">Objeções</button>
+                        <button onclick="window.filtrarPlaybook('fechamento')" class="pb-cat-btn" data-cat="fechamento" style="padding:6px 16px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; font-weight:700; cursor:pointer;">Fechamento</button>
+                        <button onclick="window.filtrarPlaybook('followup')" class="pb-cat-btn" data-cat="followup" style="padding:6px 16px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; font-weight:700; cursor:pointer;">Follow-up</button>
+                        <button onclick="window.filtrarPlaybook('upsell')" class="pb-cat-btn" data-cat="upsell" style="padding:6px 16px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; font-weight:700; cursor:pointer;">Upsell</button>
+                    </div>
+
+                    <div id="playbook-lista" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:16px;">
+                        <div style="text-align:center; padding:60px 20px; color:var(--muted); grid-column:1/-1;">
+                            <i class="ph ph-book-open" style="font-size:48px; display:block; margin-bottom:12px; opacity:.3;"></i>
+                            <p style="font-size:15px;">Nenhum script cadastrado ainda.</p>
+                            <p style="font-size:13px; margin-top:4px;">Clique em "Novo Script" para começar.</p>
+                        </div>
                     </div>
                 </section>
                 
                 <section id="aba-integracoes" class="aba-conteudo hidden">
                     <div class="page-header">
                         <div>
-                            <div class="page-title" style="color: var(--purple);">Hub de Integrações (API) 🔌</div>
-                            <div class="page-sub">Conecte o HAPSIS com N8N, Zapier, Meta Ads e outras ferramentas.</div>
+                            <div class="page-title" style="color:#b388ff;"><i class="ph ph-plugs-connected"></i> Hub de Integrações</div>
+                            <div class="page-sub">Conecte o HAPSIS com N8N, Zapier e outras ferramentas externas.</div>
                         </div>
                     </div>
-                    <div class="empty-state">
-                        <i class="ph ph-plugs-connected"></i>
-                        <p>Painel de API e Integrações sendo configurado...</p>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+
+                        <!-- N8N -->
+                        <div class="tabela-wrapper" style="padding:24px; margin:0;">
+                            <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                                <div style="width:42px; height:42px; background:rgba(236,84,20,.15); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; color:#ec5414;">N</div>
+                                <div>
+                                    <div style="font-weight:700; color:var(--text); font-size:15px;">N8N</div>
+                                    <div style="font-size:12px; color:var(--muted);">Automação sem código</div>
+                                </div>
+                            </div>
+                            <p style="font-size:13px; color:var(--muted); margin-bottom:16px; line-height:1.6;">Use o nó <strong style="color:var(--text);">HTTP Request</strong> no N8N apontando para o webhook do HAPSIS para criar leads, aprovar pagamentos ou acionar notificações automaticamente.</p>
+                            <div class="campo" style="margin-bottom:12px;">
+                                <label>Webhook URL (POST)</label>
+                                <div style="display:flex; gap:8px;">
+                                    <input type="text" readonly id="n8n-url" value="https://bskgqlhducfxfipflpqm.supabase.co/functions/v1/hapsis-webhook"
+                                        style="font-family:monospace; font-size:11px; color:#ec5414; background:rgba(236,84,20,.04); border-color:rgba(236,84,20,.2); flex:1;"/>
+                                    <button onclick="window.copiarWebhook('n8n-url')" style="background:rgba(236,84,20,.1); border:1px solid rgba(236,84,20,.3); color:#ec5414; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:700;">Copiar</button>
+                                </div>
+                            </div>
+                            <div style="background:rgba(0,0,0,.2); border-radius:8px; padding:14px; font-size:12px; color:var(--muted); font-family:monospace; line-height:1.8;">
+                                <span style="color:#4ade80;">// Payload esperado (JSON):</span><br>
+                                {<br>
+                                &nbsp;&nbsp;<span style="color:#38bdf8;">"event"</span>: <span style="color:#fbbf24;">"payment.confirmed"</span>,<br>
+                                &nbsp;&nbsp;<span style="color:#38bdf8;">"whatsapp"</span>: <span style="color:#fbbf24;">"5511999999999"</span>,<br>
+                                &nbsp;&nbsp;<span style="color:#38bdf8;">"valor"</span>: <span style="color:#f87171;">297.00</span><br>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Zapier -->
+                        <div class="tabela-wrapper" style="padding:24px; margin:0;">
+                            <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                                <div style="width:42px; height:42px; background:rgba(255,78,0,.15); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; color:#ff4e00;">Z</div>
+                                <div>
+                                    <div style="font-weight:700; color:var(--text); font-size:15px;">Zapier</div>
+                                    <div style="font-size:12px; color:var(--muted);">Conectar apps sem código</div>
+                                </div>
+                            </div>
+                            <p style="font-size:13px; color:var(--muted); margin-bottom:16px; line-height:1.6;">No Zapier, use um <strong style="color:var(--text);">Zap com ação "Webhooks by Zapier" → POST</strong> para enviar dados ao HAPSIS sempre que ocorrer um evento em outra ferramenta (Typeform, HubSpot, Planilhas etc).</p>
+                            <div class="campo" style="margin-bottom:12px;">
+                                <label>URL de destino no Zapier (POST)</label>
+                                <div style="display:flex; gap:8px;">
+                                    <input type="text" readonly id="zapier-url" value="https://bskgqlhducfxfipflpqm.supabase.co/functions/v1/hapsis-webhook"
+                                        style="font-family:monospace; font-size:11px; color:#ff4e00; background:rgba(255,78,0,.04); border-color:rgba(255,78,0,.2); flex:1;"/>
+                                    <button onclick="window.copiarWebhook('zapier-url')" style="background:rgba(255,78,0,.1); border:1px solid rgba(255,78,0,.3); color:#ff4e00; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:700;">Copiar</button>
+                                </div>
+                            </div>
+                            <div style="background:rgba(0,0,0,.2); border-radius:8px; padding:14px; font-size:12px; color:var(--muted); line-height:1.7;">
+                                <strong style="color:var(--text);">Passo a passo:</strong><br>
+                                1. Crie um Zap com trigger da sua ferramenta<br>
+                                2. Adicione ação "Webhooks by Zapier"<br>
+                                3. Selecione método <strong style="color:#ff4e00;">POST</strong><br>
+                                4. Cole a URL acima e configure o payload<br>
+                                5. Teste e ative o Zap ✅
+                            </div>
+                        </div>
+
+                        <!-- API Key do HAPSIS -->
+                        <div class="tabela-wrapper" style="padding:24px; margin:0; grid-column:1/-1;">
+                            <h3 style="margin-bottom:16px; color:var(--text); font-family:var(--font-head); font-size:15px; display:flex; align-items:center; gap:8px;">
+                                <i class="ph ph-key" style="color:var(--accent);"></i> Chave da API (Supabase)
+                            </h3>
+                            <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">Use estas credenciais para conectar ferramentas externas diretamente ao banco de dados do HAPSIS.</p>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                                <div class="campo">
+                                    <label>Project URL</label>
+                                    <input type="text" readonly value="https://bskgqlhducfxfipflpqm.supabase.co"
+                                        style="font-family:monospace; font-size:12px; color:var(--novos);"/>
+                                </div>
+                                <div class="campo">
+                                    <label>Anon Key (Pública)</label>
+                                    <input type="password" readonly id="supabase-key-display" value="sb_publishable_hPbZtYmMLtMn1yfRZa4O2w_nxf43EOa"
+                                        style="font-family:monospace; font-size:12px; color:var(--muted);"
+                                        onfocus="this.type='text'" onblur="this.type='password'"/>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
             </main>
+        </div>
+    </div>
+
+    <!-- Modal: Novo OKR -->
+    <div id="modal-okr" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span class="modal-title"><i class="ph ph-flag-banner" style="color:var(--accent);"></i> Novo OKR</span>
+                <button class="btn-fechar" onclick="document.getElementById('modal-okr').classList.remove('ativa')"><i class="ph ph-x"></i></button>
+            </div>
+            <form id="form-okr">
+                <div class="campo">
+                    <label>Objetivo (O)</label>
+                    <input type="text" id="okr-objetivo" placeholder="Ex: Dobrar a receita recorrente" required/>
+                </div>
+                <div class="campo">
+                    <label>Trimestre</label>
+                    <select id="okr-trimestre">
+                        <option value="Q1">Q1 — Janeiro a Março</option>
+                        <option value="Q2">Q2 — Abril a Junho</option>
+                        <option value="Q3">Q3 — Julho a Setembro</option>
+                        <option value="Q4">Q4 — Outubro a Dezembro</option>
+                    </select>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                    <div class="campo">
+                        <label>Resultado-Chave (KR)</label>
+                        <input type="text" id="okr-kr" placeholder="Ex: Atingir R$ 50.000 MRR" required/>
+                    </div>
+                    <div class="campo">
+                        <label>Meta (valor numérico)</label>
+                        <input type="number" id="okr-meta" placeholder="50000" required/>
+                    </div>
+                </div>
+                <div class="campo">
+                    <label>Métrica atual (ponto de partida)</label>
+                    <input type="number" id="okr-atual" placeholder="0"/>
+                </div>
+                <button type="submit" class="btn-primary"><i class="ph ph-check-circle"></i> Criar OKR</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Novo Script (Playbook) -->
+    <div id="modal-playbook" class="modal-overlay">
+        <div class="modal-box" style="max-width:640px;">
+            <div class="modal-header">
+                <span class="modal-title"><i class="ph ph-book-open" style="color:var(--novos);"></i> Novo Script</span>
+                <button class="btn-fechar" onclick="document.getElementById('modal-playbook').classList.remove('ativa')"><i class="ph ph-x"></i></button>
+            </div>
+            <form id="form-playbook">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                    <div class="campo">
+                        <label>Título do Script</label>
+                        <input type="text" id="pb-titulo" placeholder="Ex: Script de Abertura Fria" required/>
+                    </div>
+                    <div class="campo">
+                        <label>Categoria</label>
+                        <select id="pb-categoria">
+                            <option value="abertura">Abertura</option>
+                            <option value="objecoes">Objeções</option>
+                            <option value="fechamento">Fechamento</option>
+                            <option value="followup">Follow-up</option>
+                            <option value="upsell">Upsell</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="campo">
+                    <label>Conteúdo do Script</label>
+                    <div id="pb-editor-toolbar" style="display:flex; gap:4px; padding:8px; background:var(--bg2); border:1px solid var(--border); border-bottom:none; border-radius:8px 8px 0 0;">
+                        <button type="button" onclick="document.execCommand('bold')" style="background:transparent; border:none; color:var(--text2); cursor:pointer; padding:4px 8px; border-radius:4px; font-weight:700;" title="Negrito"><b>B</b></button>
+                        <button type="button" onclick="document.execCommand('italic')" style="background:transparent; border:none; color:var(--text2); cursor:pointer; padding:4px 8px; border-radius:4px; font-style:italic;" title="Itálico"><i>I</i></button>
+                        <button type="button" onclick="document.execCommand('insertUnorderedList')" style="background:transparent; border:none; color:var(--text2); cursor:pointer; padding:4px 8px; border-radius:4px;" title="Lista">• Lista</button>
+                        <button type="button" onclick="document.execCommand('insertOrderedList')" style="background:transparent; border:none; color:var(--text2); cursor:pointer; padding:4px 8px; border-radius:4px;" title="Numerada">1. Lista</button>
+                    </div>
+                    <div id="pb-conteudo" contenteditable="true"
+                        style="min-height:180px; padding:16px; background:var(--bg2); border:1px solid var(--border); border-radius:0 0 8px 8px; color:var(--text); font-size:14px; line-height:1.7; outline:none;"
+                        data-placeholder="Escreva o script aqui... Use marcadores para listar objeções e respostas.">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary"><i class="ph ph-check-circle"></i> Salvar Script</button>
+            </form>
         </div>
     </div>
 
