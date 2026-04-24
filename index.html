@@ -22,6 +22,212 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <link rel="stylesheet" href="style.css" />
+
+    <!-- CSS Premium Login v2 -->
+    <style>
+        /* ── FUNDO DA TELA DE AUTH ─────────────────────── */
+        #tela-auth {
+            background: #05070f;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Sora', 'DM Sans', sans-serif;
+        }
+
+        /* ── GRID ANIMADO ──────────────────────────────── */
+        .grid-line-h {
+            position: absolute;
+            left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 20%, rgba(245,197,24,0.06) 50%, rgba(255,255,255,0.03) 80%, transparent 100%);
+            animation: grid-scan-h 8s ease-in-out infinite;
+        }
+        .grid-line-v {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 1px;
+            background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.03) 20%, rgba(179,136,255,0.05) 50%, rgba(255,255,255,0.03) 80%, transparent 100%);
+            animation: grid-scan-v 10s ease-in-out infinite;
+        }
+        @keyframes grid-scan-h {
+            0%, 100% { opacity: 0.4; transform: scaleX(0.8); }
+            50% { opacity: 1; transform: scaleX(1); }
+        }
+        @keyframes grid-scan-v {
+            0%, 100% { opacity: 0.3; transform: scaleY(0.7); }
+            50% { opacity: 0.8; transform: scaleY(1); }
+        }
+
+        /* ── ORBS ──────────────────────────────────────── */
+        @keyframes orb-float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -40px) scale(1.05); }
+            66% { transform: translate(-20px, 20px) scale(0.95); }
+        }
+
+        /* ── MÉTRICAS FLUTUANTES ───────────────────────── */
+        .login-metric-card {
+            position: fixed;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 10px 14px;
+            backdrop-filter: blur(8px);
+            animation: metric-float 6s ease-in-out infinite;
+            transition: opacity 0.5s;
+        }
+        .login-metric-card:nth-child(2n) {
+            animation-direction: reverse;
+            animation-duration: 8s;
+        }
+        .login-metric-card:nth-child(3n) {
+            animation-duration: 7s;
+        }
+        @keyframes metric-float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .lmc-icon {
+            font-size: 20px;
+            width: 36px; height: 36px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .lmc-value {
+            font-size: 14px;
+            font-weight: 800;
+            color: #fff;
+            font-family: 'Sora', sans-serif;
+            line-height: 1;
+        }
+        .lmc-label {
+            font-size: 10px;
+            color: rgba(255,255,255,0.3);
+            letter-spacing: 0.5px;
+            margin-top: 3px;
+        }
+
+        /* ── CARD DE LOGIN ─────────────────────────────── */
+        .auth-card-new {
+            position: relative;
+            background: rgba(10, 12, 20, 0.85);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 24px;
+            padding: 44px 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow:
+                0 0 0 1px rgba(245,197,24,0.05),
+                0 32px 80px rgba(0,0,0,0.6),
+                0 0 120px rgba(245,197,24,0.04);
+            animation: card-enter 0.8s cubic-bezier(.22,1,.36,1) both;
+        }
+        @keyframes card-enter {
+            from { opacity: 0; transform: translateY(32px) scale(0.96); }
+            to { opacity: 1; transform: none; }
+        }
+
+        /* ── INPUTS PREMIUM ────────────────────────────── */
+        .auth-input-new {
+            width: 100%;
+            padding: 13px 16px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+        .auth-input-new:focus {
+            border-color: rgba(245,197,24,0.5);
+            background: rgba(245,197,24,0.04);
+            box-shadow: 0 0 0 3px rgba(245,197,24,0.08);
+        }
+        .auth-input-new::placeholder {
+            color: rgba(255,255,255,0.2);
+        }
+        .auth-input-new option {
+            background: #0a0c14;
+            color: #fff;
+        }
+
+        /* ── ANIMAÇÕES GERAIS ──────────────────────────── */
+        @keyframes border-sweep {
+            0%, 100% { opacity: 0; transform: scaleX(0); transform-origin: left; }
+            50% { opacity: 1; transform: scaleX(1); }
+        }
+        @keyframes logo-pulse {
+            0%, 100% { box-shadow: 0 8px 24px rgba(245,197,24,0.4); }
+            50% { box-shadow: 0 8px 40px rgba(245,197,24,0.7), 0 0 0 8px rgba(245,197,24,0.08); }
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        /* ── RESPONSIVO ────────────────────────────────── */
+        @media (max-width: 768px) {
+            .login-metric-card { display: none !important; }
+            .auth-card-new { padding: 36px 28px; margin: 0 16px; }
+        }
+
+        /* ── GOOGLE FONT SORA ──────────────────────────── */
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
+
+        /* ── SIDEBAR PREMIUM — CATEGORIAS SÓBRIAS ──────── */
+        .sidebar-category {
+            font-size: 10px !important;
+            font-weight: 700 !important;
+            letter-spacing: 2px !important;
+            color: rgba(255,255,255,0.25) !important;
+            border-color: rgba(255,255,255,0.06) !important;
+            padding: 6px 10px !important;
+            border-radius: 6px !important;
+            margin-bottom: 4px !important;
+        }
+        .sidebar-category.cat-diretoria,
+        .sidebar-category[style*="f5c518"],
+        .sidebar-category[style*="accent"] {
+            color: rgba(245,197,24,0.5) !important;
+            border-color: rgba(245,197,24,0.08) !important;
+        }
+        .sidebar-category i {
+            opacity: 0.5;
+        }
+        /* Nav items mais elegantes */
+        .nav-item {
+            font-size: 13px !important;
+            color: rgba(255,255,255,0.55) !important;
+            border-radius: 8px !important;
+            transition: all 0.2s !important;
+        }
+        .nav-item:hover {
+            color: rgba(255,255,255,0.9) !important;
+            background: rgba(255,255,255,0.05) !important;
+        }
+        .nav-item.ativo {
+            color: #fff !important;
+            background: rgba(245,197,24,0.1) !important;
+            border-left: 2px solid rgba(245,197,24,0.8) !important;
+        }
+        /* Sidebar fundo mais premium */
+        .sidebar {
+            background: rgba(7,9,16,0.95) !important;
+            border-right: 1px solid rgba(255,255,255,0.04) !important;
+        }
+        .sidebar-logo span {
+            letter-spacing: 3px !important;
+        }
+    </style>
 </head>
 <body>
 
@@ -34,95 +240,200 @@
     ></div>
 
     <div id="tela-auth" class="tela ativa">
-        <div class="auth-card">
-            
-            <div class="auth-logo">
-                <div class="logo-icon" id="login-logo-img">
-                    <i class="ph ph-chart-pie-slice"></i>
+
+    <!-- CANVAS para partículas animadas -->
+    <canvas id="login-canvas" style="position:fixed;inset:0;z-index:0;pointer-events:none;"></canvas>
+
+    <!-- Grade de dados animada -->
+    <div id="login-grid" style="position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;">
+        <!-- Linhas horizontais -->
+        <div class="grid-line-h" style="top:15%;animation-delay:0s"></div>
+        <div class="grid-line-h" style="top:32%;animation-delay:1.2s"></div>
+        <div class="grid-line-h" style="top:55%;animation-delay:0.6s"></div>
+        <div class="grid-line-h" style="top:72%;animation-delay:1.8s"></div>
+        <div class="grid-line-h" style="top:88%;animation-delay:0.3s"></div>
+        <!-- Linhas verticais -->
+        <div class="grid-line-v" style="left:12%;animation-delay:0.4s"></div>
+        <div class="grid-line-v" style="left:28%;animation-delay:1.5s"></div>
+        <div class="grid-line-v" style="left:65%;animation-delay:0.8s"></div>
+        <div class="grid-line-v" style="left:82%;animation-delay:2s"></div>
+    </div>
+
+    <!-- Orbs de fundo -->
+    <div style="position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;">
+        <div class="login-orb" style="width:600px;height:600px;top:-200px;left:-200px;background:radial-gradient(circle,rgba(245,197,24,0.07) 0%,transparent 70%);animation:orb-float 12s ease-in-out infinite;"></div>
+        <div class="login-orb" style="width:500px;height:500px;bottom:-150px;right:-150px;background:radial-gradient(circle,rgba(179,136,255,0.08) 0%,transparent 70%);animation:orb-float 16s ease-in-out infinite reverse;"></div>
+        <div class="login-orb" style="width:300px;height:300px;top:40%;left:60%;background:radial-gradient(circle,rgba(56,189,248,0.05) 0%,transparent 70%);animation:orb-float 10s ease-in-out infinite 2s;"></div>
+    </div>
+
+    <!-- Métricas flutuantes decorativas -->
+    <div class="login-metric-card" style="top:12%;left:4%;animation-delay:0.3s;">
+        <div class="lmc-icon" style="color:#4ade80;"><i class="ph ph-trend-up"></i></div>
+        <div>
+            <div class="lmc-value" id="lmc-1">R$ 0</div>
+            <div class="lmc-label">Faturamento</div>
+        </div>
+    </div>
+    <div class="login-metric-card" style="top:28%;left:2%;animation-delay:0.8s;">
+        <div class="lmc-icon" style="color:#38bdf8;"><i class="ph ph-users-three"></i></div>
+        <div>
+            <div class="lmc-value" id="lmc-2">0</div>
+            <div class="lmc-label">Leads Ativos</div>
+        </div>
+    </div>
+    <div class="login-metric-card" style="top:50%;left:3%;animation-delay:1.2s;">
+        <div class="lmc-icon" style="color:#f5c518;"><i class="ph ph-chart-bar"></i></div>
+        <div>
+            <div class="lmc-value" id="lmc-3">0%</div>
+            <div class="lmc-label">Conversão</div>
+        </div>
+    </div>
+    <div class="login-metric-card" style="top:12%;right:4%;animation-delay:0.5s;">
+        <div class="lmc-icon" style="color:#b388ff;"><i class="ph ph-lightning"></i></div>
+        <div>
+            <div class="lmc-value" id="lmc-4">0</div>
+            <div class="lmc-label">Fechamentos</div>
+        </div>
+    </div>
+    <div class="login-metric-card" style="top:32%;right:2%;animation-delay:1s;">
+        <div class="lmc-icon" style="color:#fb923c;"><i class="ph ph-rocket-launch"></i></div>
+        <div>
+            <div class="lmc-value" id="lmc-5">0</div>
+            <div class="lmc-label">Em Negociação</div>
+        </div>
+    </div>
+    <div class="login-metric-card" style="top:54%;right:3%;animation-delay:1.5s;">
+        <div class="lmc-icon" style="color:#4ade80;"><i class="ph ph-money"></i></div>
+        <div>
+            <div class="lmc-value" id="lmc-6">R$ 0</div>
+            <div class="lmc-label">Ticket Médio</div>
+        </div>
+    </div>
+
+    <!-- Linha de notificações no topo -->
+    <div style="position:fixed;top:0;left:0;right:0;z-index:10;padding:10px 40px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;animation:pulse-dot 2s ease-in-out infinite;"></div>
+            <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:2px;">SISTEMA OPERACIONAL</span>
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.2);font-family:monospace;" id="login-clock"></div>
+    </div>
+
+    <!-- Card de Login Central -->
+    <div style="position:relative;z-index:10;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
+        <div class="auth-card-new">
+
+            <!-- Borda superior animada -->
+            <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(245,197,24,0.8),transparent);animation:border-sweep 3s ease-in-out infinite;"></div>
+
+            <!-- Logo -->
+            <div style="text-align:center;margin-bottom:32px;">
+                <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:4px;">
+                    <div style="
+                        width:48px;height:48px;border-radius:14px;
+                        background:linear-gradient(135deg,#f5c518,#e6b800);
+                        display:flex;align-items:center;justify-content:center;
+                        box-shadow:0 8px 24px rgba(245,197,24,0.4);
+                        animation:logo-pulse 3s ease-in-out infinite;
+                    ">
+                        <i class="ph ph-chart-pie-slice" style="font-size:24px;color:#0a0c11;" id="login-logo-img"></i>
+                    </div>
+                    <span style="font-size:28px;font-weight:900;color:#fff;letter-spacing:4px;font-family:'Sora',sans-serif;">HAPSIS</span>
                 </div>
-                <span>HAPSIS</span>
-            </div>
-            
-            <h1 id="auth-titulo">Acessar Sistema</h1>
-            <p class="auth-sub" id="auth-desc">Gestão de Alta Performance.</p>
-            
-            <div id="box-nome" class="campo hidden">
-                <label for="auth-nome">Nome Completo</label>
-                <input 
-                    type="text" 
-                    id="auth-nome" 
-                    placeholder="Ex: Jordan Belfort" 
-                    autocomplete="name"
-                />
-            </div>
-            
-            <div class="campo">
-                <label for="auth-email">E-mail Corporativo</label>
-                <input 
-                    type="email" 
-                    id="auth-email" 
-                    placeholder="seu@email.com" 
-                    autocomplete="email"
-                />
-            </div>
-            
-            <div class="campo">
-                <label for="auth-senha">Senha de Acesso</label>
-                <input 
-                    type="password" 
-                    id="auth-senha" 
-                    placeholder="••••••••" 
-                    autocomplete="current-password"
-                />
-                <a 
-                    id="link-esqueceu-senha" 
-                    style="display: block; font-size: 12px; color: var(--accent); text-align: right; margin-top: 6px; cursor: pointer; font-weight: bold;"
-                >
-                    Esqueci minha senha
-                </a>
+                <div style="font-size:10px;color:rgba(245,197,24,0.6);letter-spacing:3px;font-weight:700;">ENTERPRISE CRM</div>
             </div>
 
-            <div id="box-senha-confirm" class="campo hidden">
-                <label for="auth-senha-confirm">Confirmar Senha</label>
-                <input 
-                    type="password" 
-                    id="auth-senha-confirm" 
-                    placeholder="Repita a senha digitada..." 
-                />
+            <!-- Título dinâmico -->
+            <div style="margin-bottom:28px;">
+                <h1 id="auth-titulo" style="font-size:22px;font-weight:800;color:#fff;margin:0 0 6px;font-family:'Sora',sans-serif;text-align:center;">Acessar Sistema</h1>
+                <p id="auth-desc" style="font-size:13px;color:rgba(255,255,255,0.4);margin:0;text-align:center;">Gestão de Alta Performance.</p>
             </div>
-            
-            <div id="box-cargo" class="campo hidden">
-                <label for="auth-cargo">Seu Nível de Acesso</label>
-                <select id="auth-cargo">
+
+            <!-- Campos -->
+            <div id="box-nome" class="campo hidden" style="margin-bottom:16px;">
+                <label for="auth-nome" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1.5px;display:block;margin-bottom:8px;">NOME COMPLETO</label>
+                <input type="text" id="auth-nome" placeholder="Ex: Jordan Belfort" autocomplete="name" class="auth-input-new"/>
+            </div>
+
+            <div class="campo" style="margin-bottom:16px;">
+                <label for="auth-email" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1.5px;display:block;margin-bottom:8px;">E-MAIL CORPORATIVO</label>
+                <input type="email" id="auth-email" placeholder="seu@email.com" autocomplete="email" class="auth-input-new"/>
+            </div>
+
+            <div class="campo" style="margin-bottom:8px;">
+                <label for="auth-senha" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1.5px;display:block;margin-bottom:8px;">SENHA DE ACESSO</label>
+                <input type="password" id="auth-senha" placeholder="••••••••" autocomplete="current-password" class="auth-input-new"/>
+                <a id="link-esqueceu-senha" style="display:block;font-size:12px;color:rgba(245,197,24,0.7);text-align:right;margin-top:8px;cursor:pointer;font-weight:700;transition:.2s;" onmouseover="this.style.color='#f5c518'" onmouseout="this.style.color='rgba(245,197,24,0.7)'">Esqueci minha senha</a>
+            </div>
+
+            <div id="box-senha-confirm" class="campo hidden" style="margin-bottom:16px;">
+                <label for="auth-senha-confirm" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1.5px;display:block;margin-bottom:8px;">CONFIRMAR SENHA</label>
+                <input type="password" id="auth-senha-confirm" placeholder="Repita a senha..." class="auth-input-new"/>
+            </div>
+
+            <div id="box-cargo" class="campo hidden" style="margin-bottom:16px;">
+                <label for="auth-cargo" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1.5px;display:block;margin-bottom:8px;">NÍVEL DE ACESSO</label>
+                <select id="auth-cargo" class="auth-input-new" style="cursor:pointer;">
                     <option value="vendedor">🧑‍💼 Vendedor</option>
                     <option value="gestor_sub">💼 Sub Gerente</option>
                     <option value="gestor_geral">👑 Gerente</option>
                 </select>
             </div>
 
-            <div id="box-chave" class="campo hidden">
-                <label for="auth-chave" style="color: var(--accent);">
-                    <i class="ph ph-key"></i> Chave de Liberação
-                </label>
-                <input 
-                    type="password" 
-                    id="auth-chave" 
-                    placeholder="Digite a chave corporativa..." 
-                />
+            <div id="box-chave" class="campo hidden" style="margin-bottom:16px;">
+                <label for="auth-chave" style="font-size:11px;font-weight:700;color:rgba(245,197,24,0.7);letter-spacing:1.5px;display:block;margin-bottom:8px;"><i class="ph ph-key"></i> CHAVE DE LIBERAÇÃO</label>
+                <input type="password" id="auth-chave" placeholder="Digite a chave corporativa..." class="auth-input-new" style="border-color:rgba(245,197,24,0.3);"/>
             </div>
 
-            <button class="btn-primary" id="btn-login">
+            <!-- Botão principal -->
+            <button id="btn-login" style="
+                width:100%;padding:15px;margin-top:8px;
+                background:linear-gradient(135deg,#f5c518,#e6b800);
+                border:none;border-radius:12px;
+                color:#0a0c11;font-size:14px;font-weight:800;
+                font-family:'Sora',sans-serif;letter-spacing:1px;
+                cursor:pointer;
+                box-shadow:0 8px 32px rgba(245,197,24,0.35);
+                transition:all .25s cubic-bezier(.22,1,.36,1);
+                position:relative;overflow:hidden;
+            "
+            onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 40px rgba(245,197,24,0.5)'"
+            onmouseout="this.style.transform='none';this.style.boxShadow='0 8px 32px rgba(245,197,24,0.35)'">
                 Entrar no HAPSIS
             </button>
-            
-            <div class="auth-toggle" id="toggle-modo" data-modo="login">
-                Novo por aqui? <a>cadastrar-se</a>
+
+            <!-- Divisor -->
+            <div style="display:flex;align-items:center;gap:12px;margin:20px 0;">
+                <div style="flex:1;height:1px;background:rgba(255,255,255,0.06);"></div>
+                <span id="toggle-modo" data-modo="login" style="font-size:12px;color:rgba(255,255,255,0.35);cursor:pointer;white-space:nowrap;transition:.2s;" onmouseover="this.style.color='rgba(245,197,24,0.8)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">
+                    Novo por aqui? <strong style="color:rgba(245,197,24,0.8);">cadastrar-se</strong>
+                </span>
+                <div style="flex:1;height:1px;background:rgba(255,255,255,0.06);"></div>
             </div>
-            
+
+            <!-- Rodapé -->
+            <div style="text-align:center;">
+                <span style="font-size:10px;color:rgba(255,255,255,0.15);letter-spacing:1px;">POWERED BY HAPSIS ENTERPRISE v2.1</span>
+            </div>
         </div>
     </div>
 
-    <div id="tela-app" class="tela">
+    <!-- Barra inferior de status -->
+    <div style="position:fixed;bottom:0;left:0;right:0;z-index:10;padding:10px 40px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:20px;">
+            <span style="font-size:10px;color:rgba(255,255,255,0.15);letter-spacing:1px;">© 2025 HAPSIS</span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.1);">•</span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.15);">SECURE CONNECTION</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+            <div style="width:6px;height:6px;border-radius:50%;background:#4ade80;box-shadow:0 0 6px #4ade80;"></div>
+            <span style="font-size:10px;color:rgba(255,255,255,0.2);">ALL SYSTEMS NORMAL</span>
+        </div>
+    </div>
+
+</div>
+
+<div id="tela-app" class="tela">
         
         <header class="topbar">
             <div class="topbar-logo">
@@ -2327,5 +2638,300 @@
     </div>
 
     <script type="module" src="script.js"></script>
+    <!-- ================================================
+         CHAT IA HAPSIS — Assistente Flutuante
+         ================================================ -->
+
+    <!-- Botão flutuante -->
+    <div id="chat-ia-btn" onclick="window.toggleChatIA()" style="
+        position:fixed; bottom:28px; right:28px; z-index:99998;
+        width:56px; height:56px; border-radius:50%;
+        background:linear-gradient(135deg,#b388ff,#7c3aed);
+        box-shadow:0 8px 32px rgba(124,58,237,0.5);
+        cursor:pointer; display:none; align-items:center; justify-content:center;
+        transition:transform .2s, box-shadow .2s;
+        animation: pulse-ia 3s ease-in-out infinite;
+        visibility:hidden;
+    "
+    onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 12px 40px rgba(124,58,237,0.7)'"
+    onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 8px 32px rgba(124,58,237,0.5)'">
+        <i class="ph ph-chats" id="chat-ia-icone" style="font-size:24px; color:#fff;"></i>
+        <span id="chat-ia-badge" style="
+            display:none; position:absolute; top:-4px; right:-4px;
+            background:#f05252; color:#fff; border-radius:50%;
+            width:18px; height:18px; font-size:10px; font-weight:700;
+            align-items:center; justify-content:center;
+        ">1</span>
+    </div>
+
+    <!-- Janela do Chat -->
+    <div id="chat-ia-janela" style="
+        position:fixed; bottom:96px; right:28px; z-index:99997;
+        width:380px; height:520px; border-radius:20px;
+        background:rgba(12,14,22,0.97);
+        border:1px solid rgba(179,136,255,0.3);
+        box-shadow:0 32px 80px rgba(0,0,0,0.7), 0 0 60px rgba(179,136,255,0.1);
+        display:none; flex-direction:column; overflow:hidden;
+        backdrop-filter:blur(20px);
+        animation:chat-slide-in .3s cubic-bezier(.22,1.2,.36,1);
+    ">
+        <!-- Header -->
+        <div style="
+            padding:16px 20px; border-bottom:1px solid rgba(179,136,255,0.15);
+            background:linear-gradient(135deg,rgba(179,136,255,0.15),rgba(124,58,237,0.08));
+            display:flex; align-items:center; justify-content:space-between;
+        ">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="
+                    width:36px; height:36px; border-radius:10px;
+                    background:linear-gradient(135deg,#b388ff,#7c3aed);
+                    display:flex; align-items:center; justify-content:center;
+                ">
+                    <i class="ph ph-sparkle" style="color:#fff; font-size:18px;"></i>
+                </div>
+                <div>
+                    <div style="font-weight:700; color:#fff; font-size:14px; font-family:var(--font-head);">HAPSIS IA</div>
+                    <div style="font-size:11px; color:#b388ff; display:flex; align-items:center; gap:4px;">
+                        <span style="width:6px; height:6px; border-radius:50%; background:#4ade80; display:inline-block;"></span>
+                        Assistente da plataforma
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button onclick="window.limparChatIA()" title="Limpar conversa" style="
+                    background:transparent; border:none; color:rgba(255,255,255,0.4);
+                    cursor:pointer; padding:4px; border-radius:6px; font-size:14px;
+                    transition:.2s;
+                " onmouseover="this.style.color='#b388ff'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">
+                    <i class="ph ph-trash"></i>
+                </button>
+                <button onclick="window.toggleChatIA()" style="
+                    background:transparent; border:none; color:rgba(255,255,255,0.4);
+                    cursor:pointer; padding:4px; border-radius:6px; font-size:16px;
+                    transition:.2s;
+                " onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mensagens -->
+        <div id="chat-ia-mensagens" style="
+            flex:1; overflow-y:auto; padding:16px; display:flex;
+            flex-direction:column; gap:12px;
+            scrollbar-width:thin; scrollbar-color:rgba(179,136,255,0.3) transparent;
+        ">
+            <!-- Mensagem de boas-vindas -->
+            <div class="chat-msg-ia" style="display:flex; gap:8px; align-items:flex-start;">
+                <div style="width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,#b388ff,#7c3aed); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px;">
+                    <i class="ph ph-sparkle" style="color:#fff; font-size:13px;"></i>
+                </div>
+                <div style="background:rgba(179,136,255,0.1); border:1px solid rgba(179,136,255,0.2); border-radius:0 12px 12px 12px; padding:10px 14px; max-width:280px;">
+                    <p style="color:rgba(255,255,255,0.85); font-size:13px; line-height:1.6; margin:0;">
+                        Olá! Sou o assistente do HAPSIS. 👋<br><br>
+                        Pode me perguntar sobre qualquer funcionalidade da plataforma — Pipeline, Financeiro, IA, Automações, ou qualquer dúvida que tiver.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Sugestões rápidas -->
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;">
+                <button onclick="window.enviarSugestaoChat('Como funciona o Pipeline?')" style="background:rgba(179,136,255,0.08); border:1px solid rgba(179,136,255,0.2); color:#b388ff; padding:5px 10px; border-radius:20px; cursor:pointer; font-size:11px; transition:.2s;" onmouseover="this.style.background='rgba(179,136,255,0.18)'" onmouseout="this.style.background='rgba(179,136,255,0.08)'">Como funciona o Pipeline?</button>
+                <button onclick="window.enviarSugestaoChat('Como aprovar uma venda?')" style="background:rgba(179,136,255,0.08); border:1px solid rgba(179,136,255,0.2); color:#b388ff; padding:5px 10px; border-radius:20px; cursor:pointer; font-size:11px; transition:.2s;" onmouseover="this.style.background='rgba(179,136,255,0.18)'" onmouseout="this.style.background='rgba(179,136,255,0.08)'">Como aprovar uma venda?</button>
+                <button onclick="window.enviarSugestaoChat('Como criar uma campanha de bônus?')" style="background:rgba(179,136,255,0.08); border:1px solid rgba(179,136,255,0.2); color:#b388ff; padding:5px 10px; border-radius:20px; cursor:pointer; font-size:11px; transition:.2s;" onmouseover="this.style.background='rgba(179,136,255,0.18)'" onmouseout="this.style.background='rgba(179,136,255,0.08)'">Como criar um bônus?</button>
+                <button onclick="window.enviarSugestaoChat('Como funciona a inadimplência automática?')" style="background:rgba(179,136,255,0.08); border:1px solid rgba(179,136,255,0.2); color:#b388ff; padding:5px 10px; border-radius:20px; cursor:pointer; font-size:11px; transition:.2s;" onmouseover="this.style.background='rgba(179,136,255,0.18)'" onmouseout="this.style.background='rgba(179,136,255,0.08)'">Inadimplência automática?</button>
+            </div>
+        </div>
+
+        <!-- Input -->
+        <div style="padding:12px 16px; border-top:1px solid rgba(179,136,255,0.15);">
+            <div style="display:flex; gap:8px; align-items:flex-end;">
+                <textarea id="chat-ia-input" placeholder="Pergunte sobre o HAPSIS..."
+                    rows="1"
+                    onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); window.enviarMensagemChat(); }"
+                    oninput="this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,100)+'px'"
+                    style="
+                        flex:1; background:rgba(255,255,255,0.06); border:1px solid rgba(179,136,255,0.2);
+                        border-radius:12px; padding:10px 14px; color:#fff; font-size:13px;
+                        resize:none; outline:none; font-family:var(--font-body);
+                        transition:.2s; line-height:1.5; max-height:100px; overflow-y:auto;
+                    "
+                    onfocus="this.style.borderColor='rgba(179,136,255,0.5)'"
+                    onblur="this.style.borderColor='rgba(179,136,255,0.2)'"
+                ></textarea>
+                <button onclick="window.enviarMensagemChat()" id="chat-ia-send-btn" style="
+                    width:38px; height:38px; border-radius:10px; flex-shrink:0;
+                    background:linear-gradient(135deg,#b388ff,#7c3aed);
+                    border:none; cursor:pointer; display:flex;
+                    align-items:center; justify-content:center;
+                    transition:.2s; box-shadow:0 4px 12px rgba(124,58,237,0.4);
+                " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    <i class="ph ph-paper-plane-tilt" style="color:#fff; font-size:16px;"></i>
+                </button>
+            </div>
+            <p style="font-size:10px; color:rgba(255,255,255,0.25); margin:6px 0 0; text-align:center;">
+                Enter para enviar · Shift+Enter para nova linha
+            </p>
+        </div>
+    </div>
+
+    <style>
+        @keyframes pulse-ia {
+            0%, 100% { box-shadow: 0 8px 32px rgba(124,58,237,0.5); }
+            50% { box-shadow: 0 8px 40px rgba(124,58,237,0.8), 0 0 0 8px rgba(124,58,237,0.1); }
+        }
+        @keyframes chat-slide-in {
+            from { opacity:0; transform:translateY(16px) scale(0.97); }
+            to { opacity:1; transform:translateY(0) scale(1); }
+        }
+        .chat-msg-ia, .chat-msg-user { animation: fadeInMsg .25s ease; }
+        @keyframes fadeInMsg { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+        #chat-ia-mensagens::-webkit-scrollbar { width:4px; }
+        #chat-ia-mensagens::-webkit-scrollbar-track { background:transparent; }
+        #chat-ia-mensagens::-webkit-scrollbar-thumb { background:rgba(179,136,255,0.3); border-radius:4px; }
+    </style>
+
+
+<script>
+/* ── LOGIN PREMIUM JS ─────────────────────────────────── */
+
+// Relógio em tempo real
+function atualizarRelogio() {
+    const el = document.getElementById('login-clock');
+    if (!el) return;
+    const now = new Date();
+    el.textContent = now.toLocaleString('pt-BR', {
+        weekday:'short', day:'2-digit', month:'short',
+        hour:'2-digit', minute:'2-digit', second:'2-digit'
+    }).toUpperCase();
+}
+setInterval(atualizarRelogio, 1000);
+atualizarRelogio();
+
+// Contadores animados nas métricas (valores simulados para demonstração visual)
+const metricasMock = [
+    { id: 'lmc-1', valor: 847320, prefix: 'R$ ', suffix: '', decimais: 0 },
+    { id: 'lmc-2', valor: 143, prefix: '', suffix: '', decimais: 0 },
+    { id: 'lmc-3', valor: 38.4, prefix: '', suffix: '%', decimais: 1 },
+    { id: 'lmc-4', valor: 55, prefix: '', suffix: '', decimais: 0 },
+    { id: 'lmc-5', valor: 31, prefix: '', suffix: '', decimais: 0 },
+    { id: 'lmc-6', valor: 15330, prefix: 'R$ ', suffix: '', decimais: 0 },
+];
+
+function animarContador(el, alvo, prefix, suffix, decimais, duracao) {
+    let inicio = null;
+    const step = (ts) => {
+        if (!inicio) inicio = ts;
+        const prog = Math.min((ts - inicio) / duracao, 1);
+        const ease = 1 - Math.pow(1 - prog, 3);
+        const atual = alvo * ease;
+        const fmt = decimais > 0
+            ? atual.toFixed(decimais)
+            : Math.floor(atual).toLocaleString('pt-BR');
+        el.textContent = prefix + fmt + suffix;
+        if (prog < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+}
+
+// Iniciar contadores com delay escalonado
+metricasMock.forEach((m, i) => {
+    setTimeout(() => {
+        const el = document.getElementById(m.id);
+        if (el) animarContador(el, m.valor, m.prefix, m.suffix, m.decimais, 2000);
+    }, 800 + i * 300);
+});
+
+// Atualizar valores periodicamente para dar sensação de live data
+function atualizarMetricasLive() {
+    const variacao = () => (Math.random() - 0.5) * 0.04; // ±2%
+    metricasMock.forEach(m => {
+        const el = document.getElementById(m.id);
+        if (!el) return;
+        const novoValor = m.valor * (1 + variacao());
+        const fmt = m.decimais > 0
+            ? novoValor.toFixed(m.decimais)
+            : Math.floor(novoValor).toLocaleString('pt-BR');
+        el.style.transition = 'color 0.3s';
+        el.style.color = novoValor > m.valor ? '#4ade80' : '#f87171';
+        el.textContent = m.prefix + fmt + m.suffix;
+        setTimeout(() => { el.style.color = '#fff'; }, 600);
+    });
+}
+setInterval(atualizarMetricasLive, 4000);
+
+// Canvas de partículas
+(function initParticles() {
+    const canvas = document.getElementById('login-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const PARTICLES = 60;
+    const particles = Array.from({ length: PARTICLES }, () => ({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        r: Math.random() * 1.5 + 0.5,
+        alpha: Math.random() * 0.4 + 0.1,
+        color: Math.random() > 0.7
+            ? `rgba(245,197,24,`
+            : Math.random() > 0.5
+                ? `rgba(179,136,255,`
+                : `rgba(56,189,248,`,
+    }));
+
+    // Linhas de conexão entre partículas próximas
+    function drawConnections() {
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 120) {
+                    const alpha = (1 - dist / 120) * 0.12;
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        drawConnections();
+
+        particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < 0) p.x = canvas.width;
+            if (p.x > canvas.width) p.x = 0;
+            if (p.y < 0) p.y = canvas.height;
+            if (p.y > canvas.height) p.y = 0;
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = p.color + p.alpha + ')';
+            ctx.fill();
+        });
+
+        requestAnimationFrame(animate);
+    }
+    animate();
+})();
+</script>
+
 </body>
 </html>
