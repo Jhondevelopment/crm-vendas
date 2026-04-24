@@ -540,12 +540,20 @@ if (btnLogin) {
             }
 
             perfilAtual = payload;
-            mostrarToast('Conta criada com sucesso!', 'ok');
+            mostrarToast('Conta criada! Verifique o código enviado para seu e-mail.', 'ok');
 
-            setTimeout(() => {
+            // Disparar OTP de confirmação de identidade
+            try {
+                await supabase.auth.signInWithOtp({
+                    email,
+                    options: { shouldCreateUser: false }
+                });
                 isRegistering = false;
-                iniciarApp();
-            }, 500);
+                abrirModalOTP(email, 'cadastro');
+            } catch(otpErr) {
+                // Fallback: entrar direto se OTP não disponível
+                setTimeout(() => { isRegistering = false; iniciarApp(); }, 500);
+            }
         }
     };
 }
@@ -565,13 +573,17 @@ if (formRecuperar) {
         const btn = formRecuperar.querySelector('button');
         const textOriginal = btn.innerHTML;
         btn.innerHTML = 'Enviando...';
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.href.split('?')[0] // URL limpa sem parâmetros
+        });
         btn.innerHTML = textOriginal;
-        if (error) { mostrarToast('Erro: ' + error.message, 'erro'); }
-        else {
-            mostrarToast('Link de recuperação enviado pro seu e-mail!', 'ok');
+        if (error) { 
+            mostrarToast('Erro: ' + error.message, 'erro'); 
+        } else {
             document.getElementById('modal-recuperar-senha').classList.remove('ativa');
             formRecuperar.reset();
+            // Mostrar modal de instrução clara
+            document.getElementById('modal-instrucao-senha').classList.add('ativa');
         }
     };
 }
@@ -595,6 +607,11 @@ if (btnLogout) {
     btnLogout.onclick = async () => {
         const telaAuthEl = document.getElementById('tela-auth');
         if (telaAuthEl) telaAuthEl.classList.remove('entrando');
+        // Esconder chat IA antes de deslogar
+        const chatBtn = document.getElementById('chat-ia-btn');
+        const chatJanela = document.getElementById('chat-ia-janela');
+        if (chatBtn) { chatBtn.style.display = 'none'; chatBtn.style.visibility = 'hidden'; }
+        if (chatJanela) chatJanela.style.display = 'none';
         await supabase.auth.signOut();
         window.location.reload();
     };
@@ -605,19 +622,34 @@ if (btnLogout) {
  * 5. CONTROLE DE SESSÃO E CARREGAMENTO DE PERFIL
  * ============================================================================
  */
+// FIX: Verificar sessão IMEDIATAMENTE ao carregar (evita flash de login ao recarregar)
+(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+        usuarioAtual = session.user;
+        // Esconder tela de auth imediatamente — sem esperar onAuthStateChange
+        const authEl = document.getElementById('tela-auth');
+        if (authEl) authEl.style.opacity = '0';
+        verificarPerfil();
+    }
+})();
+
 supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
         document.getElementById('modal-nova-senha').classList.add('ativa');
+        return;
     }
-    if (session) {
-        usuarioAtual = session.user;
-        if (!isRegistering && !perfilAtual) {
-            verificarPerfil();
-        }
-    } else {
+    if (event === 'SIGNED_OUT') {
         usuarioAtual = null;
         perfilAtual = null;
+        const authEl = document.getElementById('tela-auth');
+        if (authEl) authEl.style.opacity = '1';
         mudarTela('tela-auth');
+        return;
+    }
+    if (session && !perfilAtual && !isRegistering) {
+        usuarioAtual = session.user;
+        verificarPerfil();
     }
 });
 
@@ -904,7 +936,7 @@ window.deletarAviso = async (id) => {
 
 async function carregarProdutos() {
     const { data, error } = await supabase.from('produtos').select('*').order('nome');
-    if (error) produtosData = data || [];
+    if (!error) produtosData = data || [];
     const selectProd = document.getElementById('inp-produto');
     if (selectProd) {
         selectProd.innerHTML = '<option value="">Selecione um Produto...</option>' +
@@ -1171,7 +1203,7 @@ async function carregarLeads() {
     }
 
     const { data, error } = await query;
-    if (error) leadsData = data || [];
+    if (!error) leadsData = data || [];
 
     // [FIX-BUG-4] Detecção automática de vencimento / inadimplência
     // Usa data_vencimento se existir, ou data_followup como fallback para clientes fechados
@@ -1295,17 +1327,30 @@ if (formMeta) {
             const txtOriginal = btnSalvar.innerHTML;
             btnSalvar.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Salvando...';
             btnSalvar.disabled = true;
-            const { error } = await supabase.from('profiles').update({ meta_mensal: nm }).eq('id', usuarioAtual.id);
+            // Salvar meta em todos os gestores_geral E no perfil atual
+            const { data: todosGestores } = await supabase
+                .from('profiles')
+                .select('id')
+                .in('role', ['gestor_geral', 'gestor']);
+            
+            const idsParaAtualizar = (todosGestores || []).map(g => g.id);
+            if (!idsParaAtualizar.includes(usuarioAtual.id)) idsParaAtualizar.push(usuarioAtual.id);
+            
+            const { error } = await supabase
+                .from('profiles')
+                .update({ meta_mensal: nm })
+                .in('id', idsParaAtualizar);
+
             btnSalvar.innerHTML = txtOriginal;
             btnSalvar.disabled = false;
-            if (error) { mostrarToast('Erro ao salvar meta no banco de dados.', 'erro'); }
+            if (error) { mostrarToast('Erro ao salvar meta: ' + error.message, 'erro'); console.error(error); }
             else {
                 perfilAtual.meta_mensal = nm;
                 const { data } = await supabase.from('profiles').select('*');
                 perfisEquipe = data || [];
                 window.atualizarMeta();
                 document.getElementById('modal-meta').classList.remove('ativa');
-                mostrarToast('Meta Global atualizada com sucesso!', 'ok');
+                mostrarToast('✅ Meta Global atualizada com sucesso!', 'ok');
             }
         } catch (err) {  }
     });
@@ -4198,3 +4243,193 @@ window.enviarMensagemChat = async () => {
     if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = '1'; }
     input?.focus();
 };
+
+/**
+ * ============================================================================
+ * AUTENTICAÇÃO COM CÓDIGO OTP NO EMAIL
+ * Usa o Supabase OTP nativo — precisa estar habilitado no dashboard
+ * ============================================================================
+ */
+
+let otpEmail = '';
+let otpTimer = null;
+let otpContagem = 60;
+
+// Inicializar inputs OTP com navegação automática entre dígitos
+function inicializarOTPInputs() {
+    const inputs = document.querySelectorAll('.otp-digit');
+    inputs.forEach((inp, idx) => {
+        inp.addEventListener('input', (e) => {
+            const val = e.target.value.replace(/[^0-9]/g, '');
+            e.target.value = val;
+            if (val) {
+                e.target.classList.add('preenchido');
+                if (idx < inputs.length - 1) inputs[idx + 1].focus();
+                // Auto-verificar quando todos preenchidos
+                const todos = [...inputs].every(i => i.value !== '');
+                if (todos) verificarOTP();
+            } else {
+                e.target.classList.remove('preenchido');
+            }
+        });
+        inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !inp.value && idx > 0) {
+                inputs[idx - 1].focus();
+                inputs[idx - 1].value = '';
+                inputs[idx - 1].classList.remove('preenchido');
+            }
+        });
+        inp.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const texto = e.clipboardData.getData('text').replace(/[^0-9]/g, '');
+            [...texto].slice(0, 6).forEach((c, i) => {
+                if (inputs[i]) { inputs[i].value = c; inputs[i].classList.add('preenchido'); }
+            });
+            if (texto.length >= 6) verificarOTP();
+        });
+    });
+}
+
+// Abrir modal OTP
+function abrirModalOTP(email) {
+    otpEmail = email;
+    const modal = document.getElementById('modal-otp');
+    const desc  = document.getElementById('otp-desc');
+    if (desc) desc.textContent = `Enviamos um código de 6 dígitos para ${email}`;
+    // Limpar inputs
+    document.querySelectorAll('.otp-digit').forEach(i => { i.value = ''; i.classList.remove('preenchido'); });
+    if (modal) {
+        modal.classList.add('ativa');
+        setTimeout(() => document.querySelector('.otp-digit')?.focus(), 300);
+    }
+    iniciarTimerOTP();
+}
+
+// Timer de reenvio
+function iniciarTimerOTP() {
+    otpContagem = 60;
+    const btn = document.getElementById('btn-reenviar-otp');
+    clearInterval(otpTimer);
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.4';
+        btn.textContent = `Reenviar em ${otpContagem}s`;
+    }
+    otpTimer = setInterval(() => {
+        otpContagem--;
+        if (btn) btn.textContent = `Reenviar em ${otpContagem}s`;
+        if (otpContagem <= 0) {
+            clearInterval(otpTimer);
+            if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Reenviar código'; }
+        }
+    }, 1000);
+}
+
+// Reenviar OTP
+window.reenviarOTP = async () => {
+    if (!otpEmail) return;
+    await supabase.auth.signInWithOtp({ email: otpEmail });
+    iniciarTimerOTP();
+    mostrarToast('Novo código enviado para seu e-mail!', 'ok');
+};
+
+// Verificar código OTP
+async function verificarOTP() {
+    const inputs = document.querySelectorAll('.otp-digit');
+    const token = [...inputs].map(i => i.value).join('');
+    if (token.length !== 6) return;
+
+    const btn = document.getElementById('btn-verificar-otp');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Verificando...'; }
+
+    const { data, error } = await supabase.auth.verifyOtp({
+        email: otpEmail,
+        token: token,
+        type: 'email'
+    });
+
+    if (error) {
+        // Mostrar erro visual nos inputs
+        const erroEl = document.getElementById('otp-erro');
+        if (erroEl) erroEl.style.display = 'block';
+        document.querySelectorAll('.otp-digit').forEach(i => {
+            i.classList.remove('preenchido');
+            i.value = '';
+            i.style.borderColor = 'rgba(240,82,82,0.6)';
+            setTimeout(() => { i.style.borderColor = ''; }, 2000);
+        });
+        document.querySelector('.otp-digit')?.focus();
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ph ph-check-circle"></i> Verificar Código'; }
+    } else {
+        document.getElementById('modal-otp')?.classList.remove('ativa');
+        mostrarToast('✅ Identidade verificada! Entrando no sistema...', 'ok');
+        // Após verificar OTP, entrar na plataforma
+        if (data?.session) {
+            usuarioAtual = data.session.user;
+            await verificarPerfil();
+        } else if (usuarioAtual) {
+            await iniciarApp();
+        }
+    }
+}
+
+// Botão verificar
+const btnVerOTP = document.getElementById('btn-verificar-otp');
+if (btnVerOTP) btnVerOTP.onclick = verificarOTP;
+
+// Inicializar ao carregar
+inicializarOTPInputs();
+
+/**
+ * ============================================================================
+ * HELPERS — Modal instrução senha
+ * ============================================================================
+ */
+window._mostrarInstrucaoSenha = function() {
+    document.getElementById('modal-instrucao-senha')?.classList.add('ativa');
+};
+
+/**
+ * Fix visual: aplicar CSS escuro nos selects gerados dinamicamente via JS
+ * Chamado sempre que um modal abre ou select é criado programaticamente
+ */
+window._fixSelectsDark = function() {
+    document.querySelectorAll('select').forEach(sel => {
+        if (sel.dataset.darkFixed) return;
+        sel.dataset.darkFixed = '1';
+        sel.style.cssText = `
+            background-color: #0d1117 !important;
+            color: #e8eaf6 !important;
+            border: 1px solid rgba(255,255,255,0.12) !important;
+            border-radius: 8px !important;
+            padding: 8px 36px 8px 12px !important;
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 10px center !important;
+            cursor: pointer !important;
+        `;
+        // Fix das options
+        sel.querySelectorAll('option').forEach(opt => {
+            opt.style.backgroundColor = '#0d1117';
+            opt.style.color = '#e8eaf6';
+        });
+    });
+};
+
+// Aplicar fix de selects quando modais abrem
+document.querySelectorAll('.modal-overlay').forEach(modal => {
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach(m => {
+            if (m.target.classList.contains('ativa')) {
+                setTimeout(window._fixSelectsDark, 50);
+            }
+        });
+    });
+    observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+});
+
+// Aplicar fix inicial e após carregamento
+setTimeout(window._fixSelectsDark, 500);
+setTimeout(window._fixSelectsDark, 2000);

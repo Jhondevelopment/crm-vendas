@@ -23,7 +23,34 @@
     
     <link rel="stylesheet" href="style.css" />
 
-    <!-- CSS Premium Login v2 -->
+    
+
+
+<style>
+        /* ── OTP INPUTS ── */
+        .otp-digit {
+            width: 44px; height: 52px;
+            text-align: center;
+            font-size: 22px; font-weight: 800;
+            font-family: var(--font-head);
+            color: var(--text);
+            background: var(--bg2);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+            caret-color: transparent;
+        }
+        .otp-digit:focus {
+            border-color: rgba(245,197,24,0.6);
+            box-shadow: 0 0 0 3px rgba(245,197,24,0.1);
+        }
+        .otp-digit.preenchido {
+            border-color: rgba(74,222,128,0.5);
+            color: #4ade80;
+        }
+        <!-- CSS Premium Login v2 -->
+    </style>
     <style>
         /* ── FUNDO DA TELA DE AUTH ─────────────────────── */
         #tela-auth {
@@ -56,15 +83,11 @@
             0%, 100% { opacity: 0.3; transform: scaleY(0.7); }
             50% { opacity: 0.8; transform: scaleY(1); }
         }
-
-        /* ── ORBS ──────────────────────────────────────── */
         @keyframes orb-float {
             0%, 100% { transform: translate(0, 0) scale(1); }
             33% { transform: translate(30px, -40px) scale(1.05); }
             66% { transform: translate(-20px, 20px) scale(0.95); }
         }
-
-        /* ── MÉTRICAS FLUTUANTES ───────────────────────── */
         .login-metric-card {
             position: fixed;
             display: flex;
@@ -76,42 +99,22 @@
             padding: 10px 14px;
             backdrop-filter: blur(8px);
             animation: metric-float 6s ease-in-out infinite;
-            transition: opacity 0.5s;
         }
-        .login-metric-card:nth-child(2n) {
-            animation-direction: reverse;
-            animation-duration: 8s;
-        }
-        .login-metric-card:nth-child(3n) {
-            animation-duration: 7s;
-        }
+        .login-metric-card:nth-child(2n) { animation-direction: reverse; animation-duration: 8s; }
+        .login-metric-card:nth-child(3n) { animation-duration: 7s; }
         @keyframes metric-float {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-8px); }
         }
         .lmc-icon {
-            font-size: 20px;
-            width: 36px; height: 36px;
+            font-size: 20px; width: 36px; height: 36px;
             background: rgba(255,255,255,0.04);
             border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
             flex-shrink: 0;
         }
-        .lmc-value {
-            font-size: 14px;
-            font-weight: 800;
-            color: #fff;
-            font-family: 'Sora', sans-serif;
-            line-height: 1;
-        }
-        .lmc-label {
-            font-size: 10px;
-            color: rgba(255,255,255,0.3);
-            letter-spacing: 0.5px;
-            margin-top: 3px;
-        }
-
-        /* ── CARD DE LOGIN ─────────────────────────────── */
+        .lmc-value { font-size: 14px; font-weight: 800; color: #fff; line-height: 1; }
+        .lmc-label { font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 0.5px; margin-top: 3px; }
         .auth-card-new {
             position: relative;
             background: rgba(10, 12, 20, 0.85);
@@ -122,29 +125,19 @@
             padding: 44px 40px;
             width: 100%;
             max-width: 420px;
-            box-shadow:
-                0 0 0 1px rgba(245,197,24,0.05),
-                0 32px 80px rgba(0,0,0,0.6),
-                0 0 120px rgba(245,197,24,0.04);
+            box-shadow: 0 0 0 1px rgba(245,197,24,0.05), 0 32px 80px rgba(0,0,0,0.6);
             animation: card-enter 0.8s cubic-bezier(.22,1,.36,1) both;
         }
         @keyframes card-enter {
             from { opacity: 0; transform: translateY(32px) scale(0.96); }
             to { opacity: 1; transform: none; }
         }
-
-        /* ── INPUTS PREMIUM ────────────────────────────── */
         .auth-input-new {
-            width: 100%;
-            padding: 13px 16px;
+            width: 100%; padding: 13px 16px;
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 10px;
-            color: #fff;
-            font-size: 14px;
-            font-family: inherit;
-            outline: none;
-            transition: all 0.2s;
+            border-radius: 10px; color: #fff; font-size: 14px;
+            font-family: inherit; outline: none; transition: all 0.2s;
             box-sizing: border-box;
         }
         .auth-input-new:focus {
@@ -152,15 +145,8 @@
             background: rgba(245,197,24,0.04);
             box-shadow: 0 0 0 3px rgba(245,197,24,0.08);
         }
-        .auth-input-new::placeholder {
-            color: rgba(255,255,255,0.2);
-        }
-        .auth-input-new option {
-            background: #0a0c14;
-            color: #fff;
-        }
-
-        /* ── ANIMAÇÕES GERAIS ──────────────────────────── */
+        .auth-input-new::placeholder { color: rgba(255,255,255,0.2); }
+        .auth-input-new option { background: #0a0c14; color: #fff; }
         @keyframes border-sweep {
             0%, 100% { opacity: 0; transform: scaleX(0); transform-origin: left; }
             50% { opacity: 1; transform: scaleX(1); }
@@ -173,59 +159,149 @@
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.5; transform: scale(0.8); }
         }
-
-        /* ── RESPONSIVO ────────────────────────────────── */
         @media (max-width: 768px) {
             .login-metric-card { display: none !important; }
             .auth-card-new { padding: 36px 28px; margin: 0 16px; }
         }
-
-        /* ── GOOGLE FONT SORA ──────────────────────────── */
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 
-        /* ── SIDEBAR PREMIUM — CATEGORIAS SÓBRIAS ──────── */
+        /* ── SIDEBAR PREMIUM ── */
         .sidebar-category {
-            font-size: 10px !important;
-            font-weight: 700 !important;
-            letter-spacing: 2px !important;
-            color: rgba(255,255,255,0.25) !important;
+            font-size: 10px !important; font-weight: 700 !important;
+            letter-spacing: 2px !important; color: rgba(255,255,255,0.25) !important;
             border-color: rgba(255,255,255,0.06) !important;
-            padding: 6px 10px !important;
-            border-radius: 6px !important;
+            padding: 6px 10px !important; border-radius: 6px !important;
             margin-bottom: 4px !important;
         }
-        .sidebar-category.cat-diretoria,
-        .sidebar-category[style*="f5c518"],
-        .sidebar-category[style*="accent"] {
+        .sidebar-category.cat-diretoria {
             color: rgba(245,197,24,0.5) !important;
             border-color: rgba(245,197,24,0.08) !important;
         }
-        .sidebar-category i {
-            opacity: 0.5;
-        }
-        /* Nav items mais elegantes */
+        .sidebar-category i { opacity: 0.5; }
         .nav-item {
-            font-size: 13px !important;
-            color: rgba(255,255,255,0.55) !important;
-            border-radius: 8px !important;
-            transition: all 0.2s !important;
+            font-size: 13px !important; color: rgba(255,255,255,0.55) !important;
+            border-radius: 8px !important; transition: all 0.2s !important;
         }
-        .nav-item:hover {
-            color: rgba(255,255,255,0.9) !important;
-            background: rgba(255,255,255,0.05) !important;
-        }
+        .nav-item:hover { color: rgba(255,255,255,0.9) !important; background: rgba(255,255,255,0.05) !important; }
         .nav-item.ativo {
-            color: #fff !important;
-            background: rgba(245,197,24,0.1) !important;
+            color: #fff !important; background: rgba(245,197,24,0.1) !important;
             border-left: 2px solid rgba(245,197,24,0.8) !important;
         }
-        /* Sidebar fundo mais premium */
-        .sidebar {
-            background: rgba(7,9,16,0.95) !important;
-            border-right: 1px solid rgba(255,255,255,0.04) !important;
+        .sidebar { background: rgba(7,9,16,0.95) !important; border-right: 1px solid rgba(255,255,255,0.04) !important; }
+
+        /* ── FIX GLOBAL: Dropdowns escuros ── */
+        select, .campo select, .modal-box select {
+            background-color: var(--bg2, #131626) !important;
+            color: var(--text, #e8eaf6) !important;
         }
-        .sidebar-logo span {
-            letter-spacing: 3px !important;
+        select option, .campo select option {
+            background-color: #0d1020 !important; color: #e8eaf6 !important;
+        }
+        select option:checked { background-color: rgba(245,197,24,0.2) !important; color: #f5c518 !important; }
+
+        /* ── OTP INPUTS ── */
+        .otp-digit {
+            width: 44px; height: 52px; text-align: center;
+            font-size: 22px; font-weight: 800; font-family: var(--font-head);
+            color: var(--text); background: var(--bg2);
+            border: 1.5px solid var(--border); border-radius: 10px;
+            outline: none; transition: border-color .2s, box-shadow .2s;
+            caret-color: transparent;
+        }
+        .otp-digit:focus { border-color: rgba(245,197,24,0.6); box-shadow: 0 0 0 3px rgba(245,197,24,0.1); }
+        .otp-digit.preenchido { border-color: rgba(74,222,128,0.5); color: #4ade80; }
+
+        /* ── CHAT IA ── */
+        @keyframes pulse-ia {
+            0%, 100% { box-shadow: 0 8px 32px rgba(124,58,237,0.5); }
+            50% { box-shadow: 0 8px 40px rgba(124,58,237,0.8), 0 0 0 8px rgba(124,58,237,0.1); }
+        }
+        @keyframes chat-slide-in {
+            from { opacity:0; transform:translateY(16px) scale(0.97); }
+            to { opacity:1; transform:translateY(0) scale(1); }
+        }
+        .chat-msg-ia, .chat-msg-user { animation: fadeInMsg .25s ease; }
+        @keyframes fadeInMsg { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+        #chat-ia-mensagens::-webkit-scrollbar { width:4px; }
+        #chat-ia-mensagens::-webkit-scrollbar-thumb { background:rgba(179,136,255,0.3); border-radius:4px; }
+    </style>
+
+
+    <style id="hapsis-select-fix">
+        /* ============================================================
+           HAPSIS — FIX DEFINITIVO DROPDOWNS ESCUROS
+           Funciona no Windows Chrome/Edge/Firefox/Safari
+           ============================================================ */
+
+        /* Reset base de todos os selects */
+        select {
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+            background-color: #0d1117 !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 12px center !important;
+            padding-right: 36px !important;
+            color: #e8eaf6 !important;
+            border: 1px solid rgba(255,255,255,0.12) !important;
+            border-radius: 8px !important;
+            cursor: pointer !important;
+            font-family: inherit !important;
+            font-size: 13px !important;
+        }
+        select:focus {
+            border-color: rgba(245,197,24,0.5) !important;
+            outline: none !important;
+            box-shadow: 0 0 0 3px rgba(245,197,24,0.08) !important;
+        }
+
+        /* Options — Windows Chrome renderiza via OS, mas podemos forçar */
+        select option {
+            background-color: #0d1117 !important;
+            background: #0d1117 !important;
+            color: #e8eaf6 !important;
+            padding: 8px 12px !important;
+        }
+        select option:checked,
+        select option:hover,
+        select option:focus {
+            background-color: #1a1f2e !important;
+            background: linear-gradient(#1a1f2e, #1a1f2e) !important;
+            color: #f5c518 !important;
+        }
+        select option:disabled {
+            color: rgba(255,255,255,0.3) !important;
+        }
+
+        /* Campos específicos dentro de modais e forms */
+        .campo select,
+        .modal-box select,
+        .modal-overlay select,
+        #modal-lead select,
+        #modal-produto select,
+        #modal-bonus select,
+        #modal-despesa select,
+        #modal-okr select,
+        #modal-playbook select,
+        #modal-upload-cofre select,
+        #modal-motivo-perda select,
+        #modal-nova-equipe select,
+        #modal-mudar-equipe select,
+        #modal-acessos select,
+        .export-toolbar select,
+        .drawer-panel select {
+            background-color: #0d1117 !important;
+            color: #e8eaf6 !important;
+            border-color: rgba(255,255,255,0.12) !important;
+        }
+
+        /* Select no painel de acessos (gerado via JS) */
+        .lista-painel-acessos select,
+        #lista-painel-acessos select {
+            background-color: #0d1117 !important;
+            color: #e8eaf6 !important;
+            min-width: 130px;
         }
     </style>
 </head>
@@ -329,13 +405,7 @@
             <!-- Logo -->
             <div style="text-align:center;margin-bottom:32px;">
                 <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:4px;">
-                    <div style="
-                        width:48px;height:48px;border-radius:14px;
-                        background:linear-gradient(135deg,#f5c518,#e6b800);
-                        display:flex;align-items:center;justify-content:center;
-                        box-shadow:0 8px 24px rgba(245,197,24,0.4);
-                        animation:logo-pulse 3s ease-in-out infinite;
-                    ">
+                    <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#f5c518,#e6b800);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(245,197,24,0.4);animation:logo-pulse 3s ease-in-out infinite;">
                         <i class="ph ph-chart-pie-slice" style="font-size:24px;color:#0a0c11;" id="login-logo-img"></i>
                     </div>
                     <span style="font-size:28px;font-weight:900;color:#fff;letter-spacing:4px;font-family:'Sora',sans-serif;">HAPSIS</span>
@@ -386,17 +456,7 @@
             </div>
 
             <!-- Botão principal -->
-            <button id="btn-login" style="
-                width:100%;padding:15px;margin-top:8px;
-                background:linear-gradient(135deg,#f5c518,#e6b800);
-                border:none;border-radius:12px;
-                color:#0a0c11;font-size:14px;font-weight:800;
-                font-family:'Sora',sans-serif;letter-spacing:1px;
-                cursor:pointer;
-                box-shadow:0 8px 32px rgba(245,197,24,0.35);
-                transition:all .25s cubic-bezier(.22,1,.36,1);
-                position:relative;overflow:hidden;
-            "
+            <button id="btn-login" style="width:100%;padding:15px;margin-top:8px;background:linear-gradient(135deg,#f5c518,#e6b800);border:none;border-radius:12px;color:#0a0c11;font-size:14px;font-weight:800;font-family:'Sora',sans-serif;letter-spacing:1px;cursor:pointer;box-shadow:0 8px 32px rgba(245,197,24,0.35);transition:all .25s cubic-bezier(.22,1,.36,1);position:relative;overflow:hidden;"
             onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 40px rgba(245,197,24,0.5)'"
             onmouseout="this.style.transform='none';this.style.boxShadow='0 8px 32px rgba(245,197,24,0.35)'">
                 Entrar no HAPSIS
@@ -1992,6 +2052,55 @@
         </div>
     </div>
 
+    <!-- Modal Verificação OTP / SMS -->
+    <div id="modal-otp" class="modal-overlay">
+        <div class="modal-box" style="max-width:420px; text-align:center;">
+            <div style="margin-bottom:24px;">
+                <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,rgba(245,197,24,0.15),rgba(245,197,24,0.05));border:1px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                    <i class="ph ph-device-mobile" style="font-size:28px;color:#f5c518;"></i>
+                </div>
+                <h3 style="font-family:var(--font-head);font-size:18px;color:var(--text);margin:0 0 8px;">Confirme sua identidade</h3>
+                <p style="color:var(--muted);font-size:13px;margin:0;line-height:1.6;" id="otp-desc">
+                    Enviamos um código de verificação de 6 dígitos para o seu e-mail/SMS.
+                </p>
+            </div>
+
+            <!-- Inputs OTP 6 dígitos -->
+            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px;" id="otp-inputs">
+                <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code"/>
+                <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]"/>
+                <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]"/>
+                <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]"/>
+                <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]"/>
+                <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]"/>
+            </div>
+
+            <!-- Mensagem de erro -->
+            <div id="otp-erro" style="display:none;background:rgba(240,82,82,0.1);border:1px solid rgba(240,82,82,0.3);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--danger);">
+                <i class="ph ph-warning-circle"></i> Código inválido. Tente novamente.
+            </div>
+
+            <button id="btn-verificar-otp" class="btn-primary" style="width:100%;margin-bottom:14px;">
+                <i class="ph ph-check-circle"></i> Verificar Código
+            </button>
+
+            <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:12px;">
+                <span style="font-size:12px;color:var(--muted);">Não recebeu?</span>
+                <button id="btn-reenviar-otp" onclick="window.reenviarOTP()" style="background:transparent;border:none;color:#f5c518;font-size:12px;font-weight:700;cursor:pointer;padding:0;transition:.2s;">
+                    Reenviar código
+                </button>
+            </div>
+            <div id="otp-timer" style="font-size:11px;color:var(--muted);margin-bottom:12px;display:none;">
+                Aguarde <span id="otp-timer-num">60</span>s para reenviar
+            </div>
+
+            <button onclick="document.getElementById('modal-otp').classList.remove('ativa')" style="background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;">
+                Cancelar
+            </button>
+        </div>
+    </div>
+
+
     <!-- Modal Editar Produto -->
     <div id="modal-editar-produto" class="modal-overlay">
         <div class="modal-box">
@@ -2457,6 +2566,41 @@
         </div>
     </div>
 
+
+    <!-- Modal Instrução Redefinição de Senha -->
+    <div id="modal-instrucao-senha" class="modal-overlay">
+        <div class="modal-box" style="max-width:400px;text-align:center;">
+            <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,rgba(74,222,128,0.15),rgba(74,222,128,0.05));border:1px solid rgba(74,222,128,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                <i class="ph ph-envelope-open" style="font-size:28px;color:#4ade80;"></i>
+            </div>
+            <h3 style="font-family:var(--font-head);font-size:18px;color:var(--text);margin:0 0 12px;">E-mail enviado!</h3>
+            <p style="color:var(--muted);font-size:13px;line-height:1.7;margin:0 0 20px;">
+                Enviamos um link de redefinição de senha para seu e-mail.<br><br>
+                <strong style="color:var(--text);">Próximos passos:</strong>
+            </p>
+            <div style="background:var(--bg2);border-radius:10px;padding:16px;text-align:left;margin-bottom:20px;">
+                <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
+                    <span style="background:rgba(245,197,24,0.2);color:#f5c518;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</span>
+                    <span style="font-size:13px;color:var(--text2);">Abra seu e-mail e procure a mensagem do HAPSIS</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
+                    <span style="background:rgba(245,197,24,0.2);color:#f5c518;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span>
+                    <span style="font-size:13px;color:var(--text2);">Clique no link "Redefinir senha"</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                    <span style="background:rgba(245,197,24,0.2);color:#f5c518;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span>
+                    <span style="font-size:13px;color:var(--text2);">Crie sua nova senha e pronto</span>
+                </div>
+            </div>
+            <p style="font-size:11px;color:var(--muted);margin-bottom:16px;">
+                Não encontrou? Verifique a pasta de spam ou lixo eletrônico.
+            </p>
+            <button onclick="document.getElementById('modal-instrucao-senha').classList.remove('ativa')" class="btn-primary" style="width:100%;">
+                <i class="ph ph-check"></i> Entendido
+            </button>
+        </div>
+    </div>
+
     <div id="modal-nova-senha" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
@@ -2789,13 +2933,38 @@
         #chat-ia-mensagens::-webkit-scrollbar { width:4px; }
         #chat-ia-mensagens::-webkit-scrollbar-track { background:transparent; }
         #chat-ia-mensagens::-webkit-scrollbar-thumb { background:rgba(179,136,255,0.3); border-radius:4px; }
+    
+        /* ── OTP INPUTS ── */
+        .otp-digit {
+            width: 44px; height: 52px;
+            text-align: center;
+            font-size: 22px; font-weight: 800;
+            font-family: var(--font-head);
+            color: var(--text);
+            background: var(--bg2);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+            caret-color: transparent;
+        }
+        .otp-digit:focus {
+            border-color: rgba(245,197,24,0.6);
+            box-shadow: 0 0 0 3px rgba(245,197,24,0.1);
+        }
+        .otp-digit.preenchido {
+            border-color: rgba(74,222,128,0.5);
+            color: #4ade80;
+        }
     </style>
+
+
+
 
 
 <script>
 /* ── LOGIN PREMIUM JS ─────────────────────────────────── */
 
-// Relógio em tempo real
 function atualizarRelogio() {
     const el = document.getElementById('login-clock');
     if (!el) return;
@@ -2808,7 +2977,6 @@ function atualizarRelogio() {
 setInterval(atualizarRelogio, 1000);
 atualizarRelogio();
 
-// Contadores animados nas métricas (valores simulados para demonstração visual)
 const metricasMock = [
     { id: 'lmc-1', valor: 847320, prefix: 'R$ ', suffix: '', decimais: 0 },
     { id: 'lmc-2', valor: 143, prefix: '', suffix: '', decimais: 0 },
@@ -2825,16 +2993,13 @@ function animarContador(el, alvo, prefix, suffix, decimais, duracao) {
         const prog = Math.min((ts - inicio) / duracao, 1);
         const ease = 1 - Math.pow(1 - prog, 3);
         const atual = alvo * ease;
-        const fmt = decimais > 0
-            ? atual.toFixed(decimais)
-            : Math.floor(atual).toLocaleString('pt-BR');
+        const fmt = decimais > 0 ? atual.toFixed(decimais) : Math.floor(atual).toLocaleString('pt-BR');
         el.textContent = prefix + fmt + suffix;
         if (prog < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
 }
 
-// Iniciar contadores com delay escalonado
 metricasMock.forEach((m, i) => {
     setTimeout(() => {
         const el = document.getElementById(m.id);
@@ -2842,37 +3007,28 @@ metricasMock.forEach((m, i) => {
     }, 800 + i * 300);
 });
 
-// Atualizar valores periodicamente para dar sensação de live data
 function atualizarMetricasLive() {
-    const variacao = () => (Math.random() - 0.5) * 0.04; // ±2%
+    const variacao = () => (Math.random() - 0.5) * 0.04;
     metricasMock.forEach(m => {
         const el = document.getElementById(m.id);
         if (!el) return;
         const novoValor = m.valor * (1 + variacao());
-        const fmt = m.decimais > 0
-            ? novoValor.toFixed(m.decimais)
-            : Math.floor(novoValor).toLocaleString('pt-BR');
+        const fmt = m.decimais > 0 ? novoValor.toFixed(m.decimais) : Math.floor(novoValor).toLocaleString('pt-BR');
         el.style.transition = 'color 0.3s';
         el.style.color = novoValor > m.valor ? '#4ade80' : '#f87171';
         el.textContent = m.prefix + fmt + m.suffix;
-        setTimeout(() => { el.style.color = '#fff'; }, 600);
+        setTimeout(() => { if(el) el.style.color = '#fff'; }, 600);
     });
 }
 setInterval(atualizarMetricasLive, 4000);
 
-// Canvas de partículas
 (function initParticles() {
     const canvas = document.getElementById('login-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     resize();
     window.addEventListener('resize', resize);
-
     const PARTICLES = 60;
     const particles = Array.from({ length: PARTICLES }, () => ({
         x: Math.random() * window.innerWidth,
@@ -2881,14 +3037,8 @@ setInterval(atualizarMetricasLive, 4000);
         vy: (Math.random() - 0.5) * 0.4,
         r: Math.random() * 1.5 + 0.5,
         alpha: Math.random() * 0.4 + 0.1,
-        color: Math.random() > 0.7
-            ? `rgba(245,197,24,`
-            : Math.random() > 0.5
-                ? `rgba(179,136,255,`
-                : `rgba(56,189,248,`,
+        color: Math.random() > 0.7 ? 'rgba(245,197,24,' : Math.random() > 0.5 ? 'rgba(179,136,255,' : 'rgba(56,189,248,',
     }));
-
-    // Linhas de conexão entre partículas próximas
     function drawConnections() {
         for (let i = 0; i < particles.length; i++) {
             for (let j = i + 1; j < particles.length; j++) {
@@ -2907,26 +3057,16 @@ setInterval(atualizarMetricasLive, 4000);
             }
         }
     }
-
     function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
         drawConnections();
-
         particles.forEach(p => {
-            p.x += p.vx;
-            p.y += p.vy;
-            if (p.x < 0) p.x = canvas.width;
-            if (p.x > canvas.width) p.x = 0;
-            if (p.y < 0) p.y = canvas.height;
-            if (p.y > canvas.height) p.y = 0;
-
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            ctx.fillStyle = p.color + p.alpha + ')';
-            ctx.fill();
+            p.x += p.vx; p.y += p.vy;
+            if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
+            if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = p.color + p.alpha + ')'; ctx.fill();
         });
-
         requestAnimationFrame(animate);
     }
     animate();
