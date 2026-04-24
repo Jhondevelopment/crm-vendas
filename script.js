@@ -753,6 +753,13 @@ async function iniciarApp() {
         const campanhaAtiva = bonusData.find(b => b.status === 'Ativa');
         if (campanhaAtiva) setTimeout(() => mostrarPopupBonus(campanhaAtiva), 1200);
     }
+
+    // Mostrar chat IA apenas após login confirmado
+    const chatBtn = document.getElementById('chat-ia-btn');
+    if (chatBtn) {
+        chatBtn.style.display = 'flex';
+        chatBtn.style.visibility = 'visible';
+    }
 }
 
 /**
@@ -3272,17 +3279,17 @@ async function chamarIAHapsis(prompt, titulo) {
     setTimeout(() => container.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
 
     try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
+        // Chama a Edge Function do Supabase — chave da OpenAI protegida no servidor
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/hapsis-ia`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: 'claude-haiku-4-5-20251001',
-                max_tokens: 1024,
-                messages: [{ role: 'user', content: prompt }]
-            })
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            },
+            body: JSON.stringify({ prompt })
         });
         const data = await res.json();
-        const resposta = data.content?.[0]?.text || 'Sem resposta da IA.';
+        const resposta = data.resposta || data.erro || 'Sem resposta da IA.';
 
         // Renderizar markdown básico
         const html = resposta
@@ -3970,3 +3977,224 @@ document.querySelectorAll?.('.nav-item[data-aba]')?.forEach?.(btn => {
         }
     });
 });
+
+
+/**
+ * ============================================================================
+ * CHAT IA HAPSIS — Assistente de Suporte da Plataforma
+ * ============================================================================
+ */
+
+let chatIAAberto = false;
+let chatIAHistorico = []; // Histórico de mensagens para contexto
+
+const CHAT_SYSTEM_PROMPT = `Você é o assistente oficial do HAPSIS Enterprise CRM. Responda APENAS sobre funcionalidades, dúvidas e orientações relacionadas ao sistema HAPSIS. 
+
+SOBRE O HAPSIS:
+O HAPSIS é um CRM completo com os seguintes módulos:
+
+MÓDULOS POR CARGO:
+- Vendedor: Pipeline (Kanban drag-drop), Arena (ranking em tempo real), Agenda (follow-ups), Meu Relatório (desempenho individual)
+- Sub Gerente: Aprovações de vendas, Caixa & Comissões, Contas a Pagar, Inadimplência, MRR (recorrência), Cofre de Contratos, Gestão de Bônus
+- Gerente (CEO): Tudo acima + Dashboard Geral, OKRs, Playbook de Vendas, Automações, Gestão de Equipes, IA Preditiva, White-Label, Exportação, Auditoria
+
+FUNCIONALIDADES PRINCIPAIS:
+- Pipeline: arraste leads entre colunas (Novos, Negociação, Fechados, Perdidos, Abandonados)
+- Aprovações: Sub Gerente aprova vendas antes de entrar no financeiro. Chave: FINAN2026
+- Comissões: calculadas automaticamente por produto. CFO quita com um clique
+- Inadimplência: detectada automaticamente quando data de vencimento passa. Aparece em Cobranças
+- Bônus: gestor cria campanhas com meta e prêmio. Vendedor vê popup ao entrar
+- OKRs: metas trimestrais (Q1-Q4) com barra de progresso colorida
+- Playbook: biblioteca de scripts por categoria (Abertura, Objeções, Fechamento, Follow-up, Upsell)
+- Automações: webhooks para Kirvano, Kiwify e Asaas. Round-Robin distribui leads automaticamente
+- IA Preditiva: 6 tipos de análise (Diagnóstico, Funil, Equipe, Financeiro, Churn, Pergunta Livre)
+- White-Label: troca logo, cor e nome da empresa
+- Real-Time: atualizações automáticas sem F5 via WebSocket
+- CTRL+K: paleta de comandos para navegar rapidamente
+
+CHAVES DE ACESSO:
+- Gerente: CEO2026
+- Sub Gerente: FINAN2026
+
+BANCO DE DADOS: Supabase com 7 tabelas (profiles, leads, produtos, campanhas_bonus, avisos, pagamentos_comissao, logs_exportacao)
+
+REGRAS IMPORTANTES:
+- Se perguntarem sobre algo fora do HAPSIS, diga educadamente que só pode ajudar com dúvidas da plataforma
+- Seja direto, claro e use exemplos práticos
+- Responda sempre em português
+- Máximo 200 palavras por resposta
+- Use emojis com moderação para tornar a resposta mais amigável`;
+
+window.toggleChatIA = () => {
+    const janela = document.getElementById('chat-ia-janela');
+    const badge = document.getElementById('chat-ia-badge');
+    const icone = document.getElementById('chat-ia-icone');
+
+    chatIAAberto = !chatIAAberto;
+
+    if (chatIAAberto) {
+        janela.style.display = 'flex';
+        badge.style.display = 'none';
+        icone.className = 'ph ph-x';
+        setTimeout(() => document.getElementById('chat-ia-input')?.focus(), 100);
+    } else {
+        janela.style.display = 'none';
+        icone.className = 'ph ph-chats';
+    }
+};
+
+window.limparChatIA = () => {
+    chatIAHistorico = [];
+    const msgs = document.getElementById('chat-ia-mensagens');
+    if (!msgs) return;
+    msgs.innerHTML = `
+    <div class="chat-msg-ia" style="display:flex; gap:8px; align-items:flex-start;">
+        <div style="width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,#b388ff,#7c3aed); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px;">
+            <i class="ph ph-sparkle" style="color:#fff; font-size:13px;"></i>
+        </div>
+        <div style="background:rgba(179,136,255,0.1); border:1px solid rgba(179,136,255,0.2); border-radius:0 12px 12px 12px; padding:10px 14px; max-width:280px;">
+            <p style="color:rgba(255,255,255,0.85); font-size:13px; line-height:1.6; margin:0;">
+                Conversa reiniciada. Como posso ajudar? 😊
+            </p>
+        </div>
+    </div>`;
+};
+
+window.enviarSugestaoChat = (texto) => {
+    const input = document.getElementById('chat-ia-input');
+    if (input) {
+        input.value = texto;
+        window.enviarMensagemChat();
+    }
+};
+
+function adicionarMensagemChat(texto, tipo) {
+    const msgs = document.getElementById('chat-ia-mensagens');
+    if (!msgs) return;
+
+    // Remover sugestões após primeira mensagem do usuário
+    if (tipo === 'user') {
+        const sugestoes = msgs.querySelector('[data-sugestoes]');
+        if (sugestoes) sugestoes.remove();
+    }
+
+    if (tipo === 'user') {
+        const div = document.createElement('div');
+        div.className = 'chat-msg-user';
+        div.style.cssText = 'display:flex; justify-content:flex-end;';
+        div.innerHTML = `
+            <div style="background:linear-gradient(135deg,rgba(179,136,255,0.25),rgba(124,58,237,0.2)); border:1px solid rgba(179,136,255,0.3); border-radius:12px 0 12px 12px; padding:10px 14px; max-width:280px;">
+                <p style="color:#fff; font-size:13px; line-height:1.6; margin:0; white-space:pre-wrap;">${texto}</p>
+            </div>`;
+        msgs.appendChild(div);
+    } else if (tipo === 'ia') {
+        const div = document.createElement('div');
+        div.className = 'chat-msg-ia';
+        div.style.cssText = 'display:flex; gap:8px; align-items:flex-start;';
+
+        // Converter markdown básico
+        const html = texto
+            .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#b388ff;">$1</strong>')
+            .replace(/^- (.*)/gm, '<li style="margin-bottom:4px;">$1</li>')
+            .split('\n').map(l => l.startsWith('<li') ? l : `<span>${l}</span><br>`).join('');
+
+        div.innerHTML = `
+            <div style="width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,#b388ff,#7c3aed); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px;">
+                <i class="ph ph-sparkle" style="color:#fff; font-size:13px;"></i>
+            </div>
+            <div style="background:rgba(179,136,255,0.1); border:1px solid rgba(179,136,255,0.2); border-radius:0 12px 12px 12px; padding:10px 14px; max-width:280px;">
+                <p style="color:rgba(255,255,255,0.85); font-size:13px; line-height:1.6; margin:0;">${html}</p>
+            </div>`;
+        msgs.appendChild(div);
+    } else if (tipo === 'loading') {
+        const div = document.createElement('div');
+        div.id = 'chat-ia-loading';
+        div.className = 'chat-msg-ia';
+        div.style.cssText = 'display:flex; gap:8px; align-items:flex-start;';
+        div.innerHTML = `
+            <div style="width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,#b388ff,#7c3aed); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <i class="ph ph-sparkle" style="color:#fff; font-size:13px;"></i>
+            </div>
+            <div style="background:rgba(179,136,255,0.1); border:1px solid rgba(179,136,255,0.2); border-radius:0 12px 12px 12px; padding:12px 16px;">
+                <div style="display:flex; gap:4px; align-items:center;">
+                    <span style="width:6px; height:6px; border-radius:50%; background:#b388ff; animation:dot-pulse 1.2s ease-in-out infinite;"></span>
+                    <span style="width:6px; height:6px; border-radius:50%; background:#b388ff; animation:dot-pulse 1.2s ease-in-out infinite .2s;"></span>
+                    <span style="width:6px; height:6px; border-radius:50%; background:#b388ff; animation:dot-pulse 1.2s ease-in-out infinite .4s;"></span>
+                </div>
+            </div>`;
+        msgs.appendChild(div);
+
+        // Adicionar CSS do dot-pulse se não existir
+        if (!document.getElementById('dot-pulse-style')) {
+            const s = document.createElement('style');
+            s.id = 'dot-pulse-style';
+            s.textContent = '@keyframes dot-pulse { 0%,80%,100% { transform:scale(.8); opacity:.5 } 40% { transform:scale(1); opacity:1 } }';
+            document.head.appendChild(s);
+        }
+    }
+
+    // Scroll para o fim
+    msgs.scrollTop = msgs.scrollHeight;
+}
+
+window.enviarMensagemChat = async () => {
+    const input = document.getElementById('chat-ia-input');
+    const sendBtn = document.getElementById('chat-ia-send-btn');
+    const texto = input?.value?.trim();
+    if (!texto) return;
+
+    // Limpar input e desabilitar
+    input.value = '';
+    input.style.height = 'auto';
+    if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '0.5'; }
+
+    // Mostrar mensagem do usuário
+    adicionarMensagemChat(texto, 'user');
+
+    // Adicionar ao histórico
+    chatIAHistorico.push({ role: 'user', content: texto });
+
+    // Manter histórico limitado (últimas 10 mensagens para economizar tokens)
+    if (chatIAHistorico.length > 10) {
+        chatIAHistorico = chatIAHistorico.slice(-10);
+    }
+
+    // Mostrar loading
+    adicionarMensagemChat('', 'loading');
+
+    try {
+        // Chamar Edge Function com histórico completo
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/hapsis-ia`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            },
+            body: JSON.stringify({
+                tipo: 'suporte',
+                systemPrompt: CHAT_SYSTEM_PROMPT,
+                messages: chatIAHistorico
+            })
+        });
+
+        const data = await res.json();
+        const resposta = data.resposta || data.erro || 'Não consegui responder. Tente novamente.';
+
+        // Remover loading
+        document.getElementById('chat-ia-loading')?.remove();
+
+        // Adicionar resposta
+        adicionarMensagemChat(resposta, 'ia');
+
+        // Adicionar resposta ao histórico
+        chatIAHistorico.push({ role: 'assistant', content: resposta });
+
+    } catch (err) {
+        document.getElementById('chat-ia-loading')?.remove();
+        adicionarMensagemChat('Não consegui conectar. Verifique se a IA está configurada.', 'ia');
+    }
+
+    // Reabilitar input
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = '1'; }
+    input?.focus();
+};
