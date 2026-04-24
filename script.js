@@ -553,17 +553,19 @@ if (btnLogin) {
             btnLogin.style.opacity = '1';
             btnLogin.innerText = 'Cadastrar e Entrar';
 
-            // Verificar se o Supabase exige confirmação de e-mail
-            // authData.user.confirmed_at === null significa que precisa confirmar
-            const precisaConfirmar = !authData.user.confirmed_at && !authData.user.email_confirmed_at;
-
-            if (precisaConfirmar) {
-                // Mostrar modal de "confirme seu e-mail antes de entrar"
-                mostrarModalConfirmacaoEmail(email);
-            } else {
-                // Email já confirmado (ex: modo dev sem confirmação) — entrar direto
-                mostrarToast('Conta criada com sucesso!', 'ok');
-                setTimeout(() => iniciarApp(), 500);
+            // Enviar código OTP de 6 dígitos para o e-mail
+            mostrarToast('Conta criada! Enviando código de verificação...', 'ok');
+            try {
+                await supabase.auth.signInWithOtp({
+                    email,
+                    options: { shouldCreateUser: false }
+                });
+                // Abrir modal OTP com contexto de cadastro
+                abrirModalOTP(email, 'cadastro');
+            } catch (otpErr) {
+                // Fallback: entrar direto se OTP falhar
+                mostrarToast('Conta criada! Entrando...', 'ok');
+                setTimeout(() => iniciarApp(), 600);
             }
         }
     };
@@ -580,21 +582,30 @@ const formRecuperar = document.getElementById('form-recuperar-senha');
 if (formRecuperar) {
     formRecuperar.onsubmit = async (e) => {
         e.preventDefault();
-        const email = document.getElementById('inp-recuperar-email').value;
+        const email = document.getElementById('inp-recuperar-email').value.trim();
+        if (!email) return mostrarToast('Digite seu e-mail.', 'erro');
+
         const btn = formRecuperar.querySelector('button');
         const textOriginal = btn.innerHTML;
-        btn.innerHTML = 'Enviando...';
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.href.split('?')[0] // URL limpa sem parâmetros
+        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Enviando código...';
+        btn.disabled = true;
+
+        // Enviar OTP de 6 dígitos para o e-mail
+        const { error } = await supabase.auth.signInWithOtp({
+            email,
+            options: { shouldCreateUser: false }
         });
+
         btn.innerHTML = textOriginal;
-        if (error) { 
-            mostrarToast('Erro: ' + error.message, 'erro'); 
+        btn.disabled = false;
+
+        if (error) {
+            mostrarToast('Erro: ' + error.message, 'erro');
         } else {
             document.getElementById('modal-recuperar-senha').classList.remove('ativa');
             formRecuperar.reset();
-            // Mostrar modal de instrução clara
-            document.getElementById('modal-instrucao-senha').classList.add('ativa');
+            // Abrir modal OTP com contexto de recuperação de senha
+            abrirModalOTP(email, 'recuperacao');
         }
     };
 }
@@ -1577,6 +1588,7 @@ function gerarCardHTML(l, status, isPosVenda = false) {
                 </button>
             </div>
             ${valorExibicao}
+            ${(status === 'perdidos' || l.estornado) ? '<button onclick=\"event.stopPropagation(); window.reativarLead(' + l.id + ')\" style=\"width:100%;margin-top:8px;padding:7px;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.35);border-radius:7px;color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;\"><i class=\"ph ph-arrow-counter-clockwise\"></i> Reativar Cliente</button>' : ''}
         </div>
     </div>`;
 }
@@ -1872,6 +1884,42 @@ if (formLead) {
         }
     });
 }
+
+
+/**
+ * Reativar lead perdido ou estornado — move de volta para negociação
+ */
+window.reativarLead = (id) => {
+    window.abrirConfirmacao(
+        '↩️ Reativar Cliente',
+        'Mover este cliente de volta para <strong>Em Negociação</strong>?<br><br>' +
+        '<span style="color:var(--muted);font-size:12px;">O histórico de perdas será mantido nos registros.</span>',
+        'Reativar',
+        async () => {
+            try {
+                const lead = leadsData.find(l => l.id === id);
+                if (!lead) return mostrarToast('Lead não encontrado.', 'erro');
+
+                const hist = lead.historico ? [...lead.historico] : [];
+                hist.push({ data: new Date().toISOString(), msg: `Cliente reativado e movido para Em Negociação por ${perfilAtual.full_name}` });
+
+                const { error } = await supabase.from('leads').update({
+                    status: 'negociacao',
+                    estornado: false,
+                    inadimplente: false,
+                    historico: hist
+                }).eq('id', id);
+
+                if (error) { mostrarToast('Erro ao reativar: ' + error.message, 'erro'); return; }
+
+                mostrarToast('✅ Cliente reativado! Está em Negociação agora.', 'ok');
+                await carregarLeads();
+            } catch (err) {
+                mostrarToast('Erro interno ao reativar cliente.', 'erro');
+            }
+        }
+    );
+};
 
 window.deletarLead = (id) => {
     window.abrirConfirmacao('Deletar Cliente', 'Tem certeza? Ação irreversível.', 'Excluir para Sempre', async () => {
@@ -2221,7 +2269,7 @@ function renderizarArena() {
     const containerPodio = document.getElementById('arena-podio');
     const containerLista = document.getElementById('arena-lista');
     if (!containerPodio || !containerLista) return;
-    const vendedores = perfisEquipe.filter(p => p.role === 'vendedor' || p.role === 'sdr');
+    const vendedores = perfisEquipe.filter(p => p.role === 'vendedor' || p.role === 'sdr' || p.role === 'gestor_sub' || p.role === 'gestor_geral');
     if (vendedores.length === 0) {
         containerPodio.innerHTML = `<div style="text-align: center; color: var(--muted); width:100%;"><i class="ph ph-users-slash" style="font-size:48px; margin-bottom:10px; display:block;"></i>Nenhum vendedor disponível para a arena.</div>`;
         containerLista.innerHTML = '';
@@ -4558,13 +4606,28 @@ function inicializarOTPInputs() {
 }
 
 // Abrir modal OTP
-function abrirModalOTP(email) {
+let otpContexto = 'cadastro'; // 'cadastro' ou 'recuperacao'
+
+function abrirModalOTP(email, contexto = 'cadastro') {
     otpEmail = email;
+    otpContexto = contexto;
     const modal = document.getElementById('modal-otp');
     const desc  = document.getElementById('otp-desc');
-    if (desc) desc.textContent = `Enviamos um código de 6 dígitos para ${email}`;
-    // Limpar inputs
-    document.querySelectorAll('.otp-digit').forEach(i => { i.value = ''; i.classList.remove('preenchido'); });
+    const titulo = document.querySelector('#modal-otp h3');
+
+    if (contexto === 'recuperacao') {
+        if (titulo) titulo.textContent = 'Redefinir sua senha';
+        if (desc) desc.innerHTML = `Enviamos um código de <strong>6 dígitos</strong> para<br><strong style="color:#fff;">${email}</strong><br><span style="font-size:12px;color:var(--muted);margin-top:4px;display:block;">Digite o código para criar sua nova senha.</span>`;
+    } else {
+        if (titulo) titulo.textContent = 'Confirme sua identidade';
+        if (desc) desc.innerHTML = `Enviamos um código de <strong>6 dígitos</strong> para<br><strong style="color:#fff;">${email}</strong><br><span style="font-size:12px;color:var(--muted);margin-top:4px;display:block;">Digite o código para entrar na plataforma.</span>`;
+    }
+
+    // Limpar inputs e erro
+    document.querySelectorAll('.otp-digit').forEach(i => { i.value = ''; i.classList.remove('preenchido'); i.style.borderColor = ''; });
+    const erroEl = document.getElementById('otp-erro');
+    if (erroEl) erroEl.style.display = 'none';
+
     if (modal) {
         modal.classList.add('ativa');
         setTimeout(() => document.querySelector('.otp-digit')?.focus(), 300);
@@ -4595,9 +4658,12 @@ function iniciarTimerOTP() {
 // Reenviar OTP
 window.reenviarOTP = async () => {
     if (!otpEmail) return;
-    await supabase.auth.signInWithOtp({ email: otpEmail });
+    await supabase.auth.signInWithOtp({
+        email: otpEmail,
+        options: { shouldCreateUser: false }
+    });
     iniciarTimerOTP();
-    mostrarToast('Novo código enviado para seu e-mail!', 'ok');
+    mostrarToast('📧 Novo código enviado para ' + otpEmail, 'ok');
 };
 
 // Verificar código OTP
@@ -4629,13 +4695,26 @@ async function verificarOTP() {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ph ph-check-circle"></i> Verificar Código'; }
     } else {
         document.getElementById('modal-otp')?.classList.remove('ativa');
-        mostrarToast('✅ Identidade verificada! Entrando no sistema...', 'ok');
-        // Após verificar OTP, entrar na plataforma
-        if (data?.session) {
-            usuarioAtual = data.session.user;
-            await verificarPerfil();
-        } else if (usuarioAtual) {
-            await iniciarApp();
+
+        if (otpContexto === 'recuperacao') {
+            // OTP de recuperação validado — agora mostrar modal de nova senha
+            mostrarToast('✅ Código verificado! Crie sua nova senha.', 'ok');
+            if (data?.session) {
+                usuarioAtual = data.session.user;
+            }
+            // Abrir modal de nova senha
+            setTimeout(() => {
+                document.getElementById('modal-nova-senha')?.classList.add('ativa');
+            }, 400);
+        } else {
+            // OTP de cadastro/login validado — entrar na plataforma
+            mostrarToast('✅ Identidade verificada! Entrando no sistema...', 'ok');
+            if (data?.session) {
+                usuarioAtual = data.session.user;
+                await verificarPerfil();
+            } else if (usuarioAtual) {
+                await iniciarApp();
+            }
         }
     }
 }
