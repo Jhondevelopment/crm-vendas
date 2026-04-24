@@ -24,9 +24,7 @@
     <link rel="stylesheet" href="style.css" />
 
     
-
-
-<style>
+    <style id="hapsis-styles">
         /* ── OTP INPUTS ── */
         .otp-digit {
             width: 44px; height: 52px;
@@ -49,259 +47,166 @@
             border-color: rgba(74,222,128,0.5);
             color: #4ade80;
         }
-        <!-- CSS Premium Login v2 -->
-    </style>
-    <style>
-        /* ── FUNDO DA TELA DE AUTH ─────────────────────── */
+
+        /* ── TELA DE AUTH — LOGIN PREMIUM ── */
         #tela-auth {
-            background: #05070f;
+            background: #05070f !important;
             min-height: 100vh;
             overflow: hidden;
             font-family: 'Sora', 'DM Sans', sans-serif;
         }
-
-        /* ── GRID ANIMADO ──────────────────────────────── */
         .grid-line-h {
-            position: absolute;
-            left: 0; right: 0;
-            height: 1px;
+            position: absolute; left: 0; right: 0; height: 1px;
             background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 20%, rgba(245,197,24,0.06) 50%, rgba(255,255,255,0.03) 80%, transparent 100%);
             animation: grid-scan-h 8s ease-in-out infinite;
         }
         .grid-line-v {
-            position: absolute;
-            top: 0; bottom: 0;
-            width: 1px;
+            position: absolute; top: 0; bottom: 0; width: 1px;
             background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.03) 20%, rgba(179,136,255,0.05) 50%, rgba(255,255,255,0.03) 80%, transparent 100%);
             animation: grid-scan-v 10s ease-in-out infinite;
         }
-        @keyframes grid-scan-h {
-            0%, 100% { opacity: 0.4; transform: scaleX(0.8); }
-            50% { opacity: 1; transform: scaleX(1); }
-        }
-        @keyframes grid-scan-v {
-            0%, 100% { opacity: 0.3; transform: scaleY(0.7); }
-            50% { opacity: 0.8; transform: scaleY(1); }
-        }
+        @keyframes grid-scan-h { 0%, 100% { opacity: 0.4; transform: scaleX(0.8); } 50% { opacity: 1; transform: scaleX(1); } }
+        @keyframes grid-scan-v { 0%, 100% { opacity: 0.3; transform: scaleY(0.7); } 50% { opacity: 0.8; transform: scaleY(1); } }
         @keyframes orb-float {
             0%, 100% { transform: translate(0, 0) scale(1); }
             33% { transform: translate(30px, -40px) scale(1.05); }
             66% { transform: translate(-20px, 20px) scale(0.95); }
         }
+
+        /* ── MÉTRICAS FLUTUANTES ── */
         .login-metric-card {
-            position: fixed;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 12px;
-            padding: 10px 14px;
-            backdrop-filter: blur(8px);
-            animation: metric-float 6s ease-in-out infinite;
+            position: fixed; display: flex; align-items: center; gap: 10px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px; padding: 10px 14px; backdrop-filter: blur(8px);
+            animation: metric-float 6s ease-in-out infinite; z-index: 5;
         }
         .login-metric-card:nth-child(2n) { animation-direction: reverse; animation-duration: 8s; }
         .login-metric-card:nth-child(3n) { animation-duration: 7s; }
-        @keyframes metric-float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-8px); }
-        }
-        .lmc-icon {
-            font-size: 20px; width: 36px; height: 36px;
-            background: rgba(255,255,255,0.04);
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-        }
+        @keyframes metric-float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
+        .lmc-icon { font-size: 20px; width: 36px; height: 36px; background: rgba(255,255,255,0.04); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .lmc-value { font-size: 14px; font-weight: 800; color: #fff; line-height: 1; }
         .lmc-label { font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 0.5px; margin-top: 3px; }
+
+        /* ── AUTH CARD ── */
         .auth-card-new {
             position: relative;
             background: rgba(10, 12, 20, 0.85);
             backdrop-filter: blur(40px) saturate(180%);
             -webkit-backdrop-filter: blur(40px) saturate(180%);
             border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 24px;
-            padding: 44px 40px;
-            width: 100%;
-            max-width: 420px;
+            border-radius: 24px; padding: 44px 40px;
+            width: 100%; max-width: 420px;
             box-shadow: 0 0 0 1px rgba(245,197,24,0.05), 0 32px 80px rgba(0,0,0,0.6);
             animation: card-enter 0.8s cubic-bezier(.22,1,.36,1) both;
         }
-        @keyframes card-enter {
-            from { opacity: 0; transform: translateY(32px) scale(0.96); }
-            to { opacity: 1; transform: none; }
-        }
+        @keyframes card-enter { from { opacity: 0; transform: translateY(32px) scale(0.96); } to { opacity: 1; transform: none; } }
         .auth-input-new {
             width: 100%; padding: 13px 16px;
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 10px; color: #fff; font-size: 14px;
-            font-family: inherit; outline: none; transition: all 0.2s;
-            box-sizing: border-box;
+            font-family: inherit; outline: none; transition: all 0.2s; box-sizing: border-box;
         }
-        .auth-input-new:focus {
-            border-color: rgba(245,197,24,0.5);
-            background: rgba(245,197,24,0.04);
-            box-shadow: 0 0 0 3px rgba(245,197,24,0.08);
-        }
+        .auth-input-new:focus { border-color: rgba(245,197,24,0.5); background: rgba(245,197,24,0.04); box-shadow: 0 0 0 3px rgba(245,197,24,0.08); }
         .auth-input-new::placeholder { color: rgba(255,255,255,0.2); }
         .auth-input-new option { background: #0a0c14; color: #fff; }
-        @keyframes border-sweep {
-            0%, 100% { opacity: 0; transform: scaleX(0); transform-origin: left; }
-            50% { opacity: 1; transform: scaleX(1); }
-        }
-        @keyframes logo-pulse {
-            0%, 100% { box-shadow: 0 8px 24px rgba(245,197,24,0.4); }
-            50% { box-shadow: 0 8px 40px rgba(245,197,24,0.7), 0 0 0 8px rgba(245,197,24,0.08); }
-        }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.8); }
-        }
+
+        @keyframes border-sweep { 0%, 100% { opacity: 0; transform: scaleX(0); transform-origin: left; } 50% { opacity: 1; transform: scaleX(1); } }
+        @keyframes logo-pulse { 0%, 100% { box-shadow: 0 8px 24px rgba(245,197,24,0.4); } 50% { box-shadow: 0 8px 40px rgba(245,197,24,0.7), 0 0 0 8px rgba(245,197,24,0.08); } }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+
         @media (max-width: 768px) {
             .login-metric-card { display: none !important; }
             .auth-card-new { padding: 36px 28px; margin: 0 16px; }
         }
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 
         /* ── SIDEBAR PREMIUM ── */
+        .sidebar { background: rgba(7,9,16,0.95) !important; border-right: 1px solid rgba(255,255,255,0.04) !important; }
         .sidebar-category {
             font-size: 10px !important; font-weight: 700 !important;
             letter-spacing: 2px !important; color: rgba(255,255,255,0.25) !important;
             border-color: rgba(255,255,255,0.06) !important;
-            padding: 6px 10px !important; border-radius: 6px !important;
-            margin-bottom: 4px !important;
+            padding: 6px 10px !important; border-radius: 6px !important; margin-bottom: 4px !important;
         }
-        .sidebar-category.cat-diretoria {
-            color: rgba(245,197,24,0.5) !important;
-            border-color: rgba(245,197,24,0.08) !important;
-        }
+        .sidebar-category.cat-diretoria { color: rgba(245,197,24,0.5) !important; border-color: rgba(245,197,24,0.08) !important; }
         .sidebar-category i { opacity: 0.5; }
-        .nav-item {
-            font-size: 13px !important; color: rgba(255,255,255,0.55) !important;
-            border-radius: 8px !important; transition: all 0.2s !important;
-        }
+        .nav-item { font-size: 13px !important; color: rgba(255,255,255,0.55) !important; border-radius: 8px !important; transition: all 0.2s !important; }
         .nav-item:hover { color: rgba(255,255,255,0.9) !important; background: rgba(255,255,255,0.05) !important; }
-        .nav-item.ativo {
-            color: #fff !important; background: rgba(245,197,24,0.1) !important;
-            border-left: 2px solid rgba(245,197,24,0.8) !important;
-        }
-        .sidebar { background: rgba(7,9,16,0.95) !important; border-right: 1px solid rgba(255,255,255,0.04) !important; }
+        .nav-item.ativo { color: #fff !important; background: rgba(245,197,24,0.1) !important; border-left: 2px solid rgba(245,197,24,0.8) !important; }
 
-        /* ── FIX GLOBAL: Dropdowns escuros ── */
-        select, .campo select, .modal-box select {
-            background-color: var(--bg2, #131626) !important;
-            color: var(--text, #e8eaf6) !important;
+        /* ── DROPDOWNS ESCUROS (FIX DEFINITIVO) ── */
+        select {
+            -webkit-appearance: none !important; -moz-appearance: none !important; appearance: none !important;
+            background-color: #0d1117 !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
+            background-repeat: no-repeat !important; background-position: right 12px center !important;
+            padding-right: 36px !important; color: #e8eaf6 !important;
+            border: 1px solid rgba(255,255,255,0.12) !important; border-radius: 8px !important;
+            cursor: pointer !important; font-family: inherit !important; font-size: 13px !important;
         }
-        select option, .campo select option {
-            background-color: #0d1020 !important; color: #e8eaf6 !important;
-        }
-        select option:checked { background-color: rgba(245,197,24,0.2) !important; color: #f5c518 !important; }
+        select:focus { border-color: rgba(245,197,24,0.5) !important; outline: none !important; box-shadow: 0 0 0 3px rgba(245,197,24,0.08) !important; }
+        select option { background-color: #0d1117 !important; color: #e8eaf6 !important; }
+        select option:checked, select option:hover { background: linear-gradient(#1a1f2e, #1a1f2e) !important; color: #f5c518 !important; }
 
-        /* ── OTP INPUTS ── */
-        .otp-digit {
-            width: 44px; height: 52px; text-align: center;
-            font-size: 22px; font-weight: 800; font-family: var(--font-head);
-            color: var(--text); background: var(--bg2);
-            border: 1.5px solid var(--border); border-radius: 10px;
-            outline: none; transition: border-color .2s, box-shadow .2s;
-            caret-color: transparent;
-        }
-        .otp-digit:focus { border-color: rgba(245,197,24,0.6); box-shadow: 0 0 0 3px rgba(245,197,24,0.1); }
-        .otp-digit.preenchido { border-color: rgba(74,222,128,0.5); color: #4ade80; }
+        /* ── BARRA DE PESQUISA — sem outline amarelo permanente ── */
+        .topbar-search input { outline: none !important; border: 1px solid rgba(255,255,255,0.06) !important; box-shadow: none !important; }
+        .topbar-search input:focus { border-color: rgba(245,197,24,0.5) !important; box-shadow: 0 0 0 3px rgba(245,197,24,0.08) !important; outline: none !important; }
+        .topbar-search input:focus-visible { outline: none !important; }
+
+        /* ── KANBAN — scroll correto ── */
+        .kanban-board { display: grid !important; grid-template-columns: repeat(5, minmax(220px, 1fr)) !important; gap: 14px !important; overflow-x: auto !important; padding-bottom: 12px !important; width: 100% !important; }
+        #aba-kanban { overflow-x: auto !important; min-width: 0 !important; }
 
         /* ── CHAT IA ── */
-        @keyframes pulse-ia {
-            0%, 100% { box-shadow: 0 8px 32px rgba(124,58,237,0.5); }
-            50% { box-shadow: 0 8px 40px rgba(124,58,237,0.8), 0 0 0 8px rgba(124,58,237,0.1); }
-        }
-        @keyframes chat-slide-in {
-            from { opacity:0; transform:translateY(16px) scale(0.97); }
-            to { opacity:1; transform:translateY(0) scale(1); }
-        }
+        @keyframes pulse-ia { 0%, 100% { box-shadow: 0 8px 32px rgba(124,58,237,0.5); } 50% { box-shadow: 0 8px 40px rgba(124,58,237,0.8), 0 0 0 8px rgba(124,58,237,0.1); } }
+        @keyframes chat-slide-in { from { opacity:0; transform:translateY(16px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
         .chat-msg-ia, .chat-msg-user { animation: fadeInMsg .25s ease; }
         @keyframes fadeInMsg { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
         #chat-ia-mensagens::-webkit-scrollbar { width:4px; }
+        #chat-ia-mensagens::-webkit-scrollbar-track { background:transparent; }
         #chat-ia-mensagens::-webkit-scrollbar-thumb { background:rgba(179,136,255,0.3); border-radius:4px; }
-    </style>
 
-
-    <style id="hapsis-select-fix">
-        /* ============================================================
-           HAPSIS — FIX DEFINITIVO DROPDOWNS ESCUROS
-           Funciona no Windows Chrome/Edge/Firefox/Safari
-           ============================================================ */
-
-        /* Reset base de todos os selects */
-        select {
-            -webkit-appearance: none !important;
-            -moz-appearance: none !important;
-            appearance: none !important;
-            background-color: #0d1117 !important;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
-            background-repeat: no-repeat !important;
-            background-position: right 12px center !important;
-            padding-right: 36px !important;
-            color: #e8eaf6 !important;
-            border: 1px solid rgba(255,255,255,0.12) !important;
-            border-radius: 8px !important;
-            cursor: pointer !important;
-            font-family: inherit !important;
-            font-size: 13px !important;
+        /* ── Esconder cargos removidos ── */
+        #auth-cargo option[value="sdr"],
+        #auth-cargo option[value="cs"],
+        #auth-cargo option[value="marketing"] {
+            display: none !important;
         }
-        select:focus {
-            border-color: rgba(245,197,24,0.5) !important;
+        /* Esconder cargos no painel de acessos gerado pelo JS */
+
+        /* ── CMD PALETTE ── */
+        #cmd-palette {
+            z-index: 99999 !important;
+            position: fixed !important;
+            inset: 0 !important;
+            display: none;
+            align-items: flex-start !important;
+            justify-content: center !important;
+            padding-top: 10vh !important;
+            background: rgba(5, 7, 16, 0.7) !important;
+            backdrop-filter: blur(12px) !important;
+        }
+        #cmd-palette.ativa {
+            display: flex !important;
+        }
+        .cmd-box {
+            margin: 0 auto !important;
+            width: 100% !important;
+            max-width: 600px !important;
+            position: relative !important;
+            left: auto !important;
+            right: auto !important;
+            transform: none !important;
+        }
+        /* Input da barra de comandos sem outline amarelo permanente */
+        #cmd-input {
             outline: none !important;
-            box-shadow: 0 0 0 3px rgba(245,197,24,0.08) !important;
+            border: none !important;
+            box-shadow: none !important;
         }
-
-        /* Options — Windows Chrome renderiza via OS, mas podemos forçar */
-        select option {
-            background-color: #0d1117 !important;
-            background: #0d1117 !important;
-            color: #e8eaf6 !important;
-            padding: 8px 12px !important;
-        }
-        select option:checked,
-        select option:hover,
-        select option:focus {
-            background-color: #1a1f2e !important;
-            background: linear-gradient(#1a1f2e, #1a1f2e) !important;
-            color: #f5c518 !important;
-        }
-        select option:disabled {
-            color: rgba(255,255,255,0.3) !important;
-        }
-
-        /* Campos específicos dentro de modais e forms */
-        .campo select,
-        .modal-box select,
-        .modal-overlay select,
-        #modal-lead select,
-        #modal-produto select,
-        #modal-bonus select,
-        #modal-despesa select,
-        #modal-okr select,
-        #modal-playbook select,
-        #modal-upload-cofre select,
-        #modal-motivo-perda select,
-        #modal-nova-equipe select,
-        #modal-mudar-equipe select,
-        #modal-acessos select,
-        .export-toolbar select,
-        .drawer-panel select {
-            background-color: #0d1117 !important;
-            color: #e8eaf6 !important;
-            border-color: rgba(255,255,255,0.12) !important;
-        }
-
-        /* Select no painel de acessos (gerado via JS) */
-        .lista-painel-acessos select,
-        #lista-painel-acessos select {
-            background-color: #0d1117 !important;
-            color: #e8eaf6 !important;
-            min-width: 130px;
+        #cmd-input:focus {
+            outline: none !important;
+            border: none !important;
         }
     </style>
 </head>
@@ -2100,7 +2005,6 @@
         </div>
     </div>
 
-
     <!-- Modal Editar Produto -->
     <div id="modal-editar-produto" class="modal-overlay">
         <div class="modal-box">
@@ -2566,7 +2470,6 @@
         </div>
     </div>
 
-
     <!-- Modal Instrução Redefinição de Senha -->
     <div id="modal-instrucao-senha" class="modal-overlay">
         <div class="modal-box" style="max-width:400px;text-align:center;">
@@ -2919,48 +2822,7 @@
         </div>
     </div>
 
-    <style>
-        @keyframes pulse-ia {
-            0%, 100% { box-shadow: 0 8px 32px rgba(124,58,237,0.5); }
-            50% { box-shadow: 0 8px 40px rgba(124,58,237,0.8), 0 0 0 8px rgba(124,58,237,0.1); }
-        }
-        @keyframes chat-slide-in {
-            from { opacity:0; transform:translateY(16px) scale(0.97); }
-            to { opacity:1; transform:translateY(0) scale(1); }
-        }
-        .chat-msg-ia, .chat-msg-user { animation: fadeInMsg .25s ease; }
-        @keyframes fadeInMsg { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-        #chat-ia-mensagens::-webkit-scrollbar { width:4px; }
-        #chat-ia-mensagens::-webkit-scrollbar-track { background:transparent; }
-        #chat-ia-mensagens::-webkit-scrollbar-thumb { background:rgba(179,136,255,0.3); border-radius:4px; }
     
-        /* ── OTP INPUTS ── */
-        .otp-digit {
-            width: 44px; height: 52px;
-            text-align: center;
-            font-size: 22px; font-weight: 800;
-            font-family: var(--font-head);
-            color: var(--text);
-            background: var(--bg2);
-            border: 1.5px solid var(--border);
-            border-radius: 10px;
-            outline: none;
-            transition: border-color .2s, box-shadow .2s;
-            caret-color: transparent;
-        }
-        .otp-digit:focus {
-            border-color: rgba(245,197,24,0.6);
-            box-shadow: 0 0 0 3px rgba(245,197,24,0.1);
-        }
-        .otp-digit.preenchido {
-            border-color: rgba(74,222,128,0.5);
-            color: #4ade80;
-        }
-    </style>
-
-
-
-
 
 <script>
 /* ── LOGIN PREMIUM JS ─────────────────────────────────── */

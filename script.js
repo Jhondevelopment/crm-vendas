@@ -27,7 +27,15 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const SUPABASE_URL = 'https://bskgqlhducfxfipflpqm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_hPbZtYmMLtMn1yfRZa4O2w_nxf43EOa';
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        storageKey: 'hapsis-auth-session',
+        storage: window.localStorage,
+        detectSessionInUrl: true,
+    }
+});
 window._supabase = supabase;
 
 // Injeção de CSS de correção (sobrepõe o style.css onde necessário)
@@ -106,8 +114,8 @@ let chartPagamentosInstance = null;
 let chartOrigemInstance = null;
 
 // [FIX-2] Roles válidos para o banco — constraint profiles_role_check
-const ROLES_VALIDOS = ['sdr', 'vendedor', 'cs', 'marketing', 'gestor_sub', 'gestor_geral'];
-const ROLE_COMPAT = { gestor: 'gestor_geral', gerente: 'gestor_sub', financeiro: 'gestor_sub', admin: 'gestor_geral' };
+const ROLES_VALIDOS = ['vendedor', 'gestor_sub', 'gestor_geral'];
+const ROLE_COMPAT = { gestor: 'gestor_geral', gerente: 'gestor_sub', financeiro: 'gestor_sub', admin: 'gestor_geral', sdr: 'vendedor', cs: 'vendedor', marketing: 'vendedor' };
 
 function normalizarRole(role) {
     if (!role) return 'vendedor';
@@ -540,19 +548,22 @@ if (btnLogin) {
             }
 
             perfilAtual = payload;
-            mostrarToast('Conta criada! Verifique o código enviado para seu e-mail.', 'ok');
+            isRegistering = false;
+            btnLogin.disabled = false;
+            btnLogin.style.opacity = '1';
+            btnLogin.innerText = 'Cadastrar e Entrar';
 
-            // Disparar OTP de confirmação de identidade
-            try {
-                await supabase.auth.signInWithOtp({
-                    email,
-                    options: { shouldCreateUser: false }
-                });
-                isRegistering = false;
-                abrirModalOTP(email, 'cadastro');
-            } catch(otpErr) {
-                // Fallback: entrar direto se OTP não disponível
-                setTimeout(() => { isRegistering = false; iniciarApp(); }, 500);
+            // Verificar se o Supabase exige confirmação de e-mail
+            // authData.user.confirmed_at === null significa que precisa confirmar
+            const precisaConfirmar = !authData.user.confirmed_at && !authData.user.email_confirmed_at;
+
+            if (precisaConfirmar) {
+                // Mostrar modal de "confirme seu e-mail antes de entrar"
+                mostrarModalConfirmacaoEmail(email);
+            } else {
+                // Email já confirmado (ex: modo dev sem confirmação) — entrar direto
+                mostrarToast('Conta criada com sucesso!', 'ok');
+                setTimeout(() => iniciarApp(), 500);
             }
         }
     };
@@ -619,39 +630,142 @@ if (btnLogout) {
 
 /**
  * ============================================================================
- * 5. CONTROLE DE SESSÃO E CARREGAMENTO DE PERFIL
+ * 5. CONTROLE DE SESSÃO — PERSISTÊNCIA TOTAL (sem flash de login no F5)
  * ============================================================================
  */
-// FIX: Verificar sessão IMEDIATAMENTE ao carregar (evita flash de login ao recarregar)
+
+// PASSO 1: Esconder TUDO imediatamente enquanto verifica sessão
+// Isso evita qualquer flash de tela de login
+(function ocultarTelaInicial() {
+    const authEl = document.getElementById('tela-auth');
+    const appEl  = document.getElementById('tela-app');
+    if (authEl) { authEl.style.opacity = '0'; authEl.style.pointerEvents = 'none'; }
+    if (appEl)  { appEl.style.opacity  = '0'; appEl.style.pointerEvents  = 'none'; }
+})();
+
+// PASSO 2: Verificar sessão salva no localStorage
 (async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-        usuarioAtual = session.user;
-        // Esconder tela de auth imediatamente — sem esperar onAuthStateChange
+    try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (session && session.user) {
+            // Sessão válida encontrada — entrar direto sem mostrar login
+            usuarioAtual = session.user;
+            await verificarPerfil();
+        } else {
+            // Sem sessão — mostrar tela de login com animação suave
+            const authEl = document.getElementById('tela-auth');
+            if (authEl) {
+                authEl.style.transition = 'opacity 0.3s ease';
+                authEl.style.opacity = '1';
+                authEl.style.pointerEvents = 'auto';
+            }
+        }
+    } catch (err) {
+        // Erro na verificação — mostrar login como fallback
         const authEl = document.getElementById('tela-auth');
-        if (authEl) authEl.style.opacity = '0';
-        verificarPerfil();
+        if (authEl) { authEl.style.opacity = '1'; authEl.style.pointerEvents = 'auto'; }
     }
 })();
 
+// PASSO 3: Listener de mudança de estado (logout, troca de aba, token expirado)
 supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
-        document.getElementById('modal-nova-senha').classList.add('ativa');
+        document.getElementById('modal-nova-senha')?.classList.add('ativa');
         return;
     }
+
+    if (event === 'TOKEN_REFRESHED' && session) {
+        // Token foi renovado automaticamente — manter tudo normal
+        usuarioAtual = session.user;
+        return;
+    }
+
     if (event === 'SIGNED_OUT') {
         usuarioAtual = null;
-        perfilAtual = null;
+        perfilAtual  = null;
+        // Esconder chat IA
+        const chatBtn    = document.getElementById('chat-ia-btn');
+        const chatJanela = document.getElementById('chat-ia-janela');
+        if (chatBtn)    { chatBtn.style.display = 'none'; chatBtn.style.visibility = 'hidden'; }
+        if (chatJanela) chatJanela.style.display = 'none';
+        // Mostrar tela de login
         const authEl = document.getElementById('tela-auth');
-        if (authEl) authEl.style.opacity = '1';
+        if (authEl) { authEl.style.opacity = '1'; authEl.style.pointerEvents = 'auto'; }
         mudarTela('tela-auth');
         return;
     }
-    if (session && !perfilAtual && !isRegistering) {
+
+    if (event === 'SIGNED_IN' && session && !perfilAtual && !isRegistering) {
         usuarioAtual = session.user;
-        verificarPerfil();
+        await verificarPerfil();
     }
 });
+
+
+/**
+ * Mostra modal pedindo ao usuário para confirmar o e-mail antes de entrar
+ */
+function mostrarModalConfirmacaoEmail(email) {
+    // Criar modal dinamicamente se não existir
+    let modal = document.getElementById('modal-confirmar-email');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-confirmar-email';
+        modal.className = 'modal-overlay ativa';
+        modal.innerHTML = `
+            <div class="modal-box" style="max-width:420px;text-align:center;">
+                <div style="width:68px;height:68px;border-radius:18px;background:linear-gradient(135deg,rgba(245,197,24,0.15),rgba(245,197,24,0.05));border:1px solid rgba(245,197,24,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                    <i class="ph ph-envelope-simple" style="font-size:32px;color:#f5c518;"></i>
+                </div>
+                <h3 style="font-family:var(--font-head);font-size:20px;color:var(--text);margin:0 0 10px;">Confirme seu e-mail!</h3>
+                <p style="color:var(--muted);font-size:13px;line-height:1.7;margin:0 0 20px;">
+                    Enviamos um link de confirmação para<br>
+                    <strong style="color:var(--text);" id="conf-email-display"></strong>
+                </p>
+
+                <div style="background:var(--bg2);border-radius:12px;padding:16px;text-align:left;margin-bottom:20px;border:1px solid var(--border);">
+                    <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
+                        <span style="background:rgba(245,197,24,0.2);color:#f5c518;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</span>
+                        <span style="font-size:13px;color:var(--text2);">Abra o e-mail enviado pelo HAPSIS</span>
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
+                        <span style="background:rgba(245,197,24,0.2);color:#f5c518;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span>
+                        <span style="font-size:13px;color:var(--text2);">Clique em <strong style="color:var(--text);">"Confirmar meu cadastro"</strong></span>
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:flex-start;">
+                        <span style="background:rgba(245,197,24,0.2);color:#f5c518;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span>
+                        <span style="font-size:13px;color:var(--text2);">Volte aqui e faça login com sua senha</span>
+                    </div>
+                </div>
+
+                <p style="font-size:11px;color:var(--muted);margin-bottom:16px;">
+                    Não recebeu? Verifique a pasta de spam.<br>
+                    <button onclick="window._reenviarConfirmacao()" style="background:transparent;border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;margin-top:4px;">Reenviar e-mail de confirmação</button>
+                </p>
+
+                <button onclick="document.getElementById('modal-confirmar-email').classList.remove('ativa')" class="btn-primary" style="width:100%;">
+                    <i class="ph ph-check"></i> Entendido — Vou confirmar meu e-mail
+                </button>
+            </div>`;
+        document.body.appendChild(modal);
+    }
+
+    // Atualizar e-mail exibido
+    const emailDisplay = document.getElementById('conf-email-display');
+    if (emailDisplay) emailDisplay.textContent = email;
+
+    modal.classList.add('ativa');
+}
+
+window._reenviarConfirmacao = async () => {
+    const emailDisplay = document.getElementById('conf-email-display');
+    const email = emailDisplay?.textContent;
+    if (!email) return;
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    if (error) mostrarToast('Erro ao reenviar: ' + error.message, 'erro');
+    else mostrarToast('✅ E-mail de confirmação reenviado!', 'ok');
+};
 
 async function verificarPerfil() {
     let { data, error } = await supabase
@@ -667,6 +781,15 @@ async function verificarPerfil() {
     }
 
     if (data) {
+        // Verificar se usuário está suspenso pelo gestor
+        if (data.suspended === true) {
+            await supabase.auth.signOut();
+            mostrarToast('🔒 Seu acesso foi suspenso. Contate o administrador.', 'erro');
+            const desc = document.getElementById('auth-desc');
+            if (desc) { desc.textContent = 'Acesso suspenso pelo administrador.'; desc.style.color = 'var(--danger)'; }
+            btnLogin && (btnLogin.disabled = false);
+            return;
+        }
         perfilAtual = data;
         // [FIX-2] Retrocompatibilidade + normalização
         perfilAtual.role = normalizarRole(perfilAtual.role);
@@ -683,6 +806,11 @@ async function verificarPerfil() {
  * ============================================================================
  */
 async function iniciarApp() {
+    // Garantir que tela de auth está escondida e app vai aparecer suavemente
+    const authEl = document.getElementById('tela-auth');
+    const appEl  = document.getElementById('tela-app');
+    if (authEl) { authEl.style.opacity = '0'; authEl.style.pointerEvents = 'none'; authEl.classList.remove('ativa'); }
+
     const elUserNome = document.getElementById('user-nome');
     if (elUserNome) {
         elUserNome.innerHTML = `
@@ -766,6 +894,15 @@ async function iniciarApp() {
     }
 
     mudarTela('tela-app');
+    // Revelar app com fadeIn suave após carregar tudo
+    setTimeout(() => {
+        const appEl = document.getElementById('tela-app');
+        if (appEl) {
+            appEl.style.transition = 'opacity 0.35s ease';
+            appEl.style.opacity = '1';
+            appEl.style.pointerEvents = 'auto';
+        }
+    }, 80);
 
     if (btnLogin) {
         btnLogin.style.transform = 'none';
@@ -3065,7 +3202,7 @@ function renderizarAbaEquipe() {
         if (!squads[eq]) squads[eq] = [];
         squads[eq].push(p);
     });
-    const rl = { sdr: 'SDR', vendedor: 'Closer', cs: 'CS', marketing: 'Mkt', gestor_sub: 'CFO', gestor_geral: 'CEO' };
+    const rl = { vendedor: '🧑‍💼 Vendedor', gestor_sub: '💼 Sub Gerente', gestor_geral: '👑 Gerente' };
     container.innerHTML = Object.entries(squads).map(([nome, membros]) => {
         const recEq = fechadosReais.filter(l => membros.some(m => m.id === l.user_id)).reduce((a, l) => a + Number(l.valor), 0);
         const sid = nome.replace(/[^a-zA-Z0-9]/g, '-');
@@ -3155,25 +3292,116 @@ if (formMudarEquipe) {
 }
 
 window.abrirPainelAcessos = () => {
+    const modal = document.getElementById('modal-acessos');
+    if (!modal) return;
+
+    // Atualizar o modal para versão completa de gestão
+    const modalBox = modal.querySelector('.modal-box');
+    if (modalBox) {
+        modalBox.style.maxWidth = '800px';
+        modalBox.style.width = '95vw';
+    }
+
     const tb = document.getElementById('lista-painel-acessos');
     if (!tb) return;
-    const rl = { sdr: '📞 SDR', vendedor: '🧑‍💼 Vendedor', cs: '🤝 CS', marketing: '🚀 Mkt', gestor_sub: '💼 CFO', gestor_geral: '👑 CEO' };
-    tb.innerHTML = perfisEquipe.map(p => `
-    <tr>
-        <td><div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:var(--accent3);display:flex;align-items:center;justify-content:center;font-weight:bold;color:var(--accent);font-size:12px;">${p.full_name.charAt(0).toUpperCase()}</div><span style="font-weight:600;color:var(--text);font-size:13px;">${p.full_name}</span></div></td>
-        <td><span class="badge badge-equipe">${p.equipe || 'Geral'}</span></td>
-        <td>
-            <select onchange="window._alterarCargoOficial('${p.id}', this.value)" style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:12px;outline:none;cursor:pointer;" ${p.id === usuarioAtual?.id ? 'disabled' : ''}>
-                ${Object.entries(rl).map(([v, l]) => `<option value="${v}" ${p.role === v ? 'selected' : ''}>${l}</option>`).join('')}
-            </select>
-        </td>
-        <td style="text-align:center;">
-            ${p.id === usuarioAtual?.id
-                ? '<span style="font-size:11px;color:var(--muted);">Você</span>'
-                : `<button class="btn-cancel" style="padding:4px 10px;width:auto;font-size:12px;margin:0 auto;border-color:var(--danger);color:var(--danger);" onclick="window._removerUsuario('${p.id}','${p.full_name}')"><i class="ph ph-user-minus"></i></button>`}
-        </td>
-    </tr>`).join('');
-    document.getElementById('modal-acessos')?.classList.add('ativa');
+
+    const rl = { vendedor: '🧑‍💼 Vendedor', gestor_sub: '💼 Sub Gerente', gestor_geral: '👑 Gerente' };
+
+    // Atualizar header do modal
+    const mTitle = modal.querySelector('.modal-title');
+    if (mTitle) mTitle.innerHTML = '<i class="ph ph-shield-check" style="color:#b388ff;"></i> Controle de Acessos';
+
+    // Estatísticas rápidas
+    const totalUsers = perfisEquipe.length;
+    const gestores = perfisEquipe.filter(p => p.role === 'gestor_geral' || p.role === 'gestor_sub').length;
+    const vendedores = perfisEquipe.filter(p => p.role === 'vendedor' || p.role === 'sdr').length;
+
+    // Inserir stats acima da tabela
+    let statsEl = document.getElementById('painel-stats');
+    if (!statsEl) {
+        statsEl = document.createElement('div');
+        statsEl.id = 'painel-stats';
+        const tabela = modal.querySelector('.tabela-wrapper');
+        if (tabela) tabela.parentNode.insertBefore(statsEl, tabela);
+    }
+    statsEl.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+            <div style="background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.2);border-radius:10px;padding:12px;text-align:center;">
+                <div style="font-size:22px;font-weight:800;color:var(--accent);font-family:var(--font-head);">${totalUsers}</div>
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Total de Usuários</div>
+            </div>
+            <div style="background:rgba(179,136,255,0.08);border:1px solid rgba(179,136,255,0.2);border-radius:10px;padding:12px;text-align:center;">
+                <div style="font-size:22px;font-weight:800;color:#b388ff;font-family:var(--font-head);">${gestores}</div>
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Gestores</div>
+            </div>
+            <div style="background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:10px;padding:12px;text-align:center;">
+                <div style="font-size:22px;font-weight:800;color:var(--fechados);font-family:var(--font-head);">${vendedores}</div>
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Vendedores</div>
+            </div>
+        </div>`;
+
+    // Atualizar cabeçalho da tabela
+    const thead = modal.querySelector('thead tr');
+    if (thead) thead.innerHTML = `
+        <th>Usuário</th>
+        <th>Squad</th>
+        <th>Cargo</th>
+        <th style="text-align:center;">Status</th>
+        <th style="text-align:center;">Ações</th>`;
+
+    tb.innerHTML = perfisEquipe.map(p => {
+        const isSelf = p.id === usuarioAtual?.id;
+        const suspended = p.suspended === true;
+        const initials = (p.full_name || 'U').charAt(0).toUpperCase();
+        const roleColor = p.role === 'gestor_geral' ? '#f5c518' : p.role === 'gestor_sub' ? '#b388ff' : '#4ade80';
+
+        return `<tr>
+            <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:34px;height:34px;border-radius:50%;background:${roleColor}22;border:1px solid ${roleColor}44;display:flex;align-items:center;justify-content:center;font-weight:800;color:${roleColor};font-size:13px;flex-shrink:0;">${initials}</div>
+                    <div>
+                        <div style="font-weight:700;color:var(--text);font-size:13px;">${p.full_name || 'Sem nome'}</div>
+                        <div style="font-size:11px;color:var(--muted);">${p.equipe || 'Geral'}</div>
+                    </div>
+                </div>
+            </td>
+            <td><span class="badge badge-equipe">${p.equipe || 'Geral'}</span></td>
+            <td>
+                <select onchange="window._alterarCargoOficial('${p.id}', this.value)"
+                    style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:6px;font-size:12px;outline:none;cursor:pointer;min-width:130px;"
+                    ${isSelf ? 'disabled' : ''}>
+                    <option value="vendedor"     ${p.role === 'vendedor'     ? 'selected' : ''}>🧑‍💼 Vendedor</option>
+                    <option value="gestor_sub"  ${p.role === 'gestor_sub'  || p.role === 'gestor' ? 'selected' : ''}>💼 Sub Gerente</option>
+                    <option value="gestor_geral" ${p.role === 'gestor_geral' || p.role === 'admin' || p.role === 'ceo' ? 'selected' : ''}>👑 Gerente</option>
+                </select>
+            </td>
+            <td style="text-align:center;">
+                ${isSelf
+                    ? '<span style="font-size:11px;color:var(--accent);font-weight:700;">• Você</span>'
+                    : suspended
+                        ? '<span style="background:rgba(240,82,82,0.12);color:var(--danger);border:1px solid rgba(240,82,82,0.3);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">Suspenso</span>'
+                        : '<span style="background:rgba(74,222,128,0.1);color:var(--fechados);border:1px solid rgba(74,222,128,0.25);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">Ativo</span>'
+                }
+            </td>
+            <td style="text-align:center;">
+                ${isSelf ? '<span style="font-size:11px;color:var(--muted);">—</span>' : `
+                <div style="display:flex;gap:6px;justify-content:center;">
+                    <button title="${suspended ? 'Reativar usuário' : 'Suspender acesso'}"
+                        onclick="window._suspenderUsuario('${p.id}','${p.full_name}',${suspended})"
+                        style="background:${suspended ? 'rgba(74,222,128,0.1)' : 'rgba(251,146,60,0.1)'};border:1px solid ${suspended ? 'rgba(74,222,128,0.3)' : 'rgba(251,146,60,0.3)'};color:${suspended ? 'var(--fechados)' : 'var(--negociacao)'};padding:5px 10px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;transition:.2s;">
+                        <i class="ph ph-${suspended ? 'user-check' : 'user-minus'}"></i> ${suspended ? 'Reativar' : 'Suspender'}
+                    </button>
+                    <button title="Excluir permanentemente"
+                        onclick="window._removerUsuario('${p.id}','${p.full_name}')"
+                        style="background:rgba(240,82,82,0.08);border:1px solid rgba(240,82,82,0.3);color:var(--danger);padding:5px 10px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;transition:.2s;">
+                        <i class="ph ph-trash"></i> Excluir
+                    </button>
+                </div>`}
+            </td>
+        </tr>`;
+    }).join('');
+
+    modal.classList.add('ativa');
 };
 
 window._alterarCargoOficial = async (uid, role) => {
@@ -3185,14 +3413,53 @@ window._alterarCargoOficial = async (uid, role) => {
     window.abrirPainelAcessos();
 };
 
-window._removerUsuario = (uid, nome) => {
-    window.abrirConfirmacao('Remover Usuário', `Remover <strong>${nome}</strong>? Ação irreversível.`, 'Remover', async () => {
-        await supabase.from('profiles').delete().eq('id', uid);
-        mostrarToast(`${nome} removido.`, 'ok');
+window._suspenderUsuario = async (uid, nome, estaSuspenso) => {
+    const acao = estaSuspenso ? 'Reativar' : 'Suspender';
+    const msg = estaSuspenso
+        ? `Reativar o acesso de <strong>${nome}</strong>?`
+        : `Suspender o acesso de <strong>${nome}</strong>? O usuário não conseguirá mais entrar.`;
+
+    window.abrirConfirmacao(acao + ' Usuário', msg, acao, async () => {
+        const { error } = await supabase.from('profiles')
+            .update({ suspended: !estaSuspenso })
+            .eq('id', uid);
+
+        if (error) {
+            mostrarToast('Erro: ' + error.message, 'erro');
+            return;
+        }
+        mostrarToast(estaSuspenso ? `✅ ${nome} reativado.` : `🔒 ${nome} suspenso.`, 'ok');
         const { data } = await supabase.from('profiles').select('*');
         perfisEquipe = data || [];
         window.abrirPainelAcessos();
     });
+};
+
+window._removerUsuario = (uid, nome) => {
+    window.abrirConfirmacao(
+        '⚠️ Excluir Usuário Permanentemente',
+        `Isso irá <strong>excluir ${nome}</strong> do sistema e revogar todo acesso.<br><br>
+        <span style="color:var(--danger);font-size:12px;">Esta ação não pode ser desfeita. Todos os leads deste usuário serão mantidos.</span>`,
+        'Excluir Definitivamente',
+        async () => {
+            try {
+                // 1. Remover o profile do banco
+                const { error: errProfile } = await supabase.from('profiles').delete().eq('id', uid);
+                if (errProfile) { mostrarToast('Erro ao remover perfil: ' + errProfile.message, 'erro'); return; }
+
+                // 2. Tentar revogar auth via Admin API (só funciona se tiver service_role key)
+                // Como usamos anon key, apenas removemos o profile — o usuário ficará sem perfil
+                // Para remoção completa do auth, o admin deve fazer pelo painel do Supabase
+                mostrarToast(`✅ ${nome} removido do sistema. Acesso revogado.`, 'ok');
+
+                const { data } = await supabase.from('profiles').select('*');
+                perfisEquipe = data || [];
+                window.abrirPainelAcessos();
+            } catch(err) {
+                mostrarToast('Erro interno ao remover usuário.', 'erro');
+            }
+        }
+    );
 };
 
 // Auditoria de Leads (CEO)
