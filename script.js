@@ -104,7 +104,9 @@ let bonusData = [];
 
 let notifsNaoLidas = 0;
 let confirmCallback = null;
-let isRegistering = false;
+let isRegistering      = false;
+let isRecuperandoSenha = false;
+let perfilPendente     = null; // dados aguardando confirmação de email
 
 // Instâncias Globais de Gráficos (Chart.js)
 let chartInstance = null;
@@ -464,16 +466,25 @@ if (btnLogin) {
             btnLogin.disabled = true;
 
             try {
-                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) {
-                    mostrarToast('Acesso negado. Verifique os dados.', 'erro');
+                    let msg = 'E-mail ou senha incorretos.';
+                    if (error.message.includes('Email not confirmed')) msg = 'Confirme seu e-mail antes de entrar.';
+                    mostrarToast(msg, 'erro');
                     btnLogin.innerText = 'Entrar no HAPSIS';
                     btnLogin.style.transform = 'none';
                     btnLogin.style.opacity = '1';
                     btnLogin.disabled = false;
+                } else {
+                    // Login OK — chamar verificarPerfil diretamente
+                    usuarioAtual = data.user;
+                    await verificarPerfil();
                 }
             } catch (err) {
                 mostrarToast('Erro de conexão.', 'erro');
+                btnLogin.innerText = 'Entrar no HAPSIS';
+                btnLogin.style.transform = 'none';
+                btnLogin.style.opacity = '1';
                 btnLogin.disabled = false;
             }
 
@@ -498,7 +509,13 @@ if (btnLogin) {
             btnLogin.disabled = true;
             isRegistering = true;
 
-            const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    emailRedirectTo: window.location.origin + window.location.pathname
+                }
+            });
 
             if (authError) {
                 let msgErro = authError.message;
@@ -518,7 +535,7 @@ if (btnLogin) {
                 return;
             }
 
-            // [FIX-2] Payload com role normalizado — nunca vai quebrar a constraint
+            // Salvar dados do perfil PENDENTE — só vai ao banco após confirmar email
             const payload = {
                 id: authData.user.id,
                 full_name: nome,
@@ -531,42 +548,20 @@ if (btnLogin) {
                 logo_empresa: null
             };
 
-            const { error: insertError } = await supabase.from('profiles').upsert([payload]);
+            // Guardar pendente no localStorage até confirmação
+            perfilPendente = payload;
+            try { localStorage.setItem('hapsis-perfil-pendente', JSON.stringify(payload)); } catch(e) {}
 
-            if (insertError) {
-                let msgDB = insertError.message;
-                if (msgDB.includes('role_check') || msgDB.includes('violates check')) {
-                    msgDB = 'Cargo inválido no banco. Execute o SQL de correção no Supabase.';
-                }
-                mostrarToast('Erro DB: ' + msgDB, 'erro');
-                btnLogin.innerText = 'Tentar Novamente';
-                btnLogin.style.transform = 'none';
-                btnLogin.style.opacity = '1';
-                btnLogin.disabled = false;
-                isRegistering = false;
-                return;
-            }
-
-            perfilAtual = payload;
             isRegistering = false;
             btnLogin.disabled = false;
             btnLogin.style.opacity = '1';
             btnLogin.innerText = 'Cadastrar e Entrar';
 
-            // Enviar código OTP de 6 dígitos para o e-mail
-            mostrarToast('Conta criada! Enviando código de verificação...', 'ok');
-            try {
-                await supabase.auth.signInWithOtp({
-                    email,
-                    options: { shouldCreateUser: false }
-                });
-                // Abrir modal OTP com contexto de cadastro
-                abrirModalOTP(email, 'cadastro');
-            } catch (otpErr) {
-                // Fallback: entrar direto se OTP falhar
-                mostrarToast('Conta criada! Entrando...', 'ok');
-                setTimeout(() => iniciarApp(), 600);
-            }
+            // Fazer logout — usuário SÓ entra após confirmar o email
+            await supabase.auth.signOut();
+
+            // Mostrar modal de confirmação de e-mail
+            mostrarModalConfirmacaoEmail(email);
         }
     };
 }
@@ -582,30 +577,21 @@ const formRecuperar = document.getElementById('form-recuperar-senha');
 if (formRecuperar) {
     formRecuperar.onsubmit = async (e) => {
         e.preventDefault();
-        const email = document.getElementById('inp-recuperar-email').value.trim();
-        if (!email) return mostrarToast('Digite seu e-mail.', 'erro');
-
+        const email = document.getElementById('inp-recuperar-email').value;
         const btn = formRecuperar.querySelector('button');
         const textOriginal = btn.innerHTML;
-        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Enviando código...';
-        btn.disabled = true;
-
-        // Enviar OTP de 6 dígitos para o e-mail
-        const { error } = await supabase.auth.signInWithOtp({
-            email,
-            options: { shouldCreateUser: false }
+        btn.innerHTML = 'Enviando...';
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.href.split('?')[0] // URL limpa sem parâmetros
         });
-
         btn.innerHTML = textOriginal;
-        btn.disabled = false;
-
-        if (error) {
-            mostrarToast('Erro: ' + error.message, 'erro');
+        if (error) { 
+            mostrarToast('Erro: ' + error.message, 'erro'); 
         } else {
             document.getElementById('modal-recuperar-senha').classList.remove('ativa');
             formRecuperar.reset();
-            // Abrir modal OTP com contexto de recuperação de senha
-            abrirModalOTP(email, 'recuperacao');
+            // Mostrar modal de instrução clara
+            document.getElementById('modal-instrucao-senha').classList.add('ativa');
         }
     };
 }
@@ -615,11 +601,25 @@ if (formNovaSenha) {
     formNovaSenha.onsubmit = async (e) => {
         e.preventDefault();
         const novaSenha = document.getElementById('inp-nova-senha').value;
+        if (novaSenha.length < 6) { mostrarToast('Mínimo 6 caracteres.', 'erro'); return; }
         const { error } = await supabase.auth.updateUser({ password: novaSenha });
-        if (error) { mostrarToast('Erro ao atualizar senha: ' + error.message, 'erro'); }
+        if (error) {
+            let msg = error.message;
+            if (msg.includes('security purposes') || msg.includes('request this after')) {
+                const s = msg.match(/\d+/) ? msg.match(/\d+/)[0] : '60';
+                msg = 'Aguarde ' + s + ' segundos antes de tentar novamente.';
+            }
+            mostrarToast(msg, 'erro');
+        }
         else {
-            mostrarToast('Senha atualizada com sucesso!', 'ok');
+            mostrarToast('✅ Senha atualizada! Entrando...', 'ok');
             document.getElementById('modal-nova-senha').classList.remove('ativa');
+            formNovaSenha.reset();
+            isRecuperandoSenha = false;
+            // Restaurar visibilidade da tela-app (foi ocultada durante recovery)
+            const _appEl = document.getElementById('tela-app');
+            if (_appEl) _appEl.style.display = '';
+            setTimeout(async () => { if (usuarioAtual) await verificarPerfil(); }, 500);
         }
     };
 }
@@ -645,44 +645,35 @@ if (btnLogout) {
  * ============================================================================
  */
 
-// PASSO 1: Esconder TUDO imediatamente enquanto verifica sessão
-// Isso evita qualquer flash de tela de login
-(function ocultarTelaInicial() {
-    const authEl = document.getElementById('tela-auth');
-    const appEl  = document.getElementById('tela-app');
-    if (authEl) { authEl.style.opacity = '0'; authEl.style.pointerEvents = 'none'; }
-    if (appEl)  { appEl.style.opacity  = '0'; appEl.style.pointerEvents  = 'none'; }
-})();
+// Sessão verificada abaixo
 
-// PASSO 2: Verificar sessão salva no localStorage
+// Verificar sessão ao carregar
 (async () => {
     try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-
+        const { data: { session } } = await supabase.auth.getSession();
         if (session && session.user) {
-            // Sessão válida encontrada — entrar direto sem mostrar login
             usuarioAtual = session.user;
             await verificarPerfil();
-        } else {
-            // Sem sessão — mostrar tela de login com animação suave
-            const authEl = document.getElementById('tela-auth');
-            if (authEl) {
-                authEl.style.transition = 'opacity 0.3s ease';
-                authEl.style.opacity = '1';
-                authEl.style.pointerEvents = 'auto';
-            }
         }
-    } catch (err) {
-        // Erro na verificação — mostrar login como fallback
-        const authEl = document.getElementById('tela-auth');
-        if (authEl) { authEl.style.opacity = '1'; authEl.style.pointerEvents = 'auto'; }
-    }
+    } catch (err) { /* tela de login já visível */ }
 })();
 
 // PASSO 3: Listener de mudança de estado (logout, troca de aba, token expirado)
 supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
-        document.getElementById('modal-nova-senha')?.classList.add('ativa');
+        isRecuperandoSenha = true;
+        usuarioAtual = session?.user || null;
+
+        // Esconder completamente a plataforma — forçar tela de login limpa
+        const appEl  = document.getElementById('tela-app');
+        const authEl = document.getElementById('tela-auth');
+        if (appEl)  { appEl.style.display = 'none'; appEl.classList.remove('ativa'); }
+        if (authEl) { authEl.style.display = 'flex'; authEl.classList.add('ativa'); }
+
+        // Mostrar modal de nova senha sobre fundo limpo
+        setTimeout(() => {
+            document.getElementById('modal-nova-senha')?.classList.add('ativa');
+        }, 300);
         return;
     }
 
@@ -701,14 +692,29 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         if (chatBtn)    { chatBtn.style.display = 'none'; chatBtn.style.visibility = 'hidden'; }
         if (chatJanela) chatJanela.style.display = 'none';
         // Mostrar tela de login
-        const authEl = document.getElementById('tela-auth');
-        if (authEl) { authEl.style.opacity = '1'; authEl.style.pointerEvents = 'auto'; }
         mudarTela('tela-auth');
         return;
     }
 
-    if (event === 'SIGNED_IN' && session && !perfilAtual && !isRegistering) {
+    if (event === 'SIGNED_IN' && session && !perfilAtual && !isRegistering && !isRecuperandoSenha) {
         usuarioAtual = session.user;
+
+        // Verificar se tem perfil pendente de criação (vem de cadastro com confirmação de email)
+        let pendente = perfilPendente;
+        if (!pendente) {
+            try {
+                const raw = localStorage.getItem('hapsis-perfil-pendente');
+                if (raw) pendente = JSON.parse(raw);
+            } catch(e) {}
+        }
+
+        if (pendente && pendente.id === session.user.id) {
+            // Email confirmado — criar o perfil no banco agora
+            await supabase.from('profiles').upsert([pendente]);
+            perfilPendente = null;
+            try { localStorage.removeItem('hapsis-perfil-pendente'); } catch(e) {}
+        }
+
         await verificarPerfil();
     }
 });
@@ -792,22 +798,21 @@ async function verificarPerfil() {
     }
 
     if (data) {
-        // Verificar se usuário está suspenso pelo gestor
         if (data.suspended === true) {
             await supabase.auth.signOut();
-            mostrarToast('🔒 Seu acesso foi suspenso. Contate o administrador.', 'erro');
-            const desc = document.getElementById('auth-desc');
-            if (desc) { desc.textContent = 'Acesso suspenso pelo administrador.'; desc.style.color = 'var(--danger)'; }
-            btnLogin && (btnLogin.disabled = false);
+            mostrarToast('🔒 Acesso suspenso. Contate o administrador.', 'erro');
+            if (btnLogin) { btnLogin.disabled = false; btnLogin.innerText = 'Entrar no HAPSIS'; btnLogin.style.opacity = '1'; btnLogin.style.transform = 'none'; }
             return;
         }
         perfilAtual = data;
-        // [FIX-2] Retrocompatibilidade + normalização
         perfilAtual.role = normalizarRole(perfilAtual.role);
+        // Resetar botão ANTES de iniciarApp para não ficar preso
+        if (btnLogin) { btnLogin.disabled = false; btnLogin.innerText = 'Entrar no HAPSIS'; btnLogin.style.opacity = '1'; btnLogin.style.transform = 'none'; }
         iniciarApp();
     } else {
         await supabase.auth.signOut();
-        window.location.reload();
+        if (btnLogin) { btnLogin.disabled = false; btnLogin.innerText = 'Entrar no HAPSIS'; btnLogin.style.opacity = '1'; btnLogin.style.transform = 'none'; }
+        mostrarToast('Perfil não encontrado. Contate o administrador.', 'erro');
     }
 }
 
@@ -820,7 +825,7 @@ async function iniciarApp() {
     // Garantir que tela de auth está escondida e app vai aparecer suavemente
     const authEl = document.getElementById('tela-auth');
     const appEl  = document.getElementById('tela-app');
-    if (authEl) { authEl.style.opacity = '0'; authEl.style.pointerEvents = 'none'; authEl.classList.remove('ativa'); }
+    if (authEl) { authEl.classList.remove('ativa'); }
 
     const elUserNome = document.getElementById('user-nome');
     if (elUserNome) {
@@ -898,22 +903,7 @@ async function iniciarApp() {
         if (boxAvisos) boxAvisos.classList.remove('hidden');
     }
 
-    const telaAuthEl = document.getElementById('tela-auth');
-    if (telaAuthEl && telaAuthEl.classList.contains('ativa')) {
-        telaAuthEl.classList.add('entrando');
-        await new Promise(r => setTimeout(r, 700));
-    }
-
     mudarTela('tela-app');
-    // Revelar app com fadeIn suave após carregar tudo
-    setTimeout(() => {
-        const appEl = document.getElementById('tela-app');
-        if (appEl) {
-            appEl.style.transition = 'opacity 0.35s ease';
-            appEl.style.opacity = '1';
-            appEl.style.pointerEvents = 'auto';
-        }
-    }, 80);
 
     if (btnLogin) {
         btnLogin.style.transform = 'none';
@@ -1042,7 +1032,14 @@ if (formAviso) {
             const titulo = document.getElementById('inp-aviso-titulo').value;
             const msg = document.getElementById('inp-aviso-msg').value;
             const { error } = await supabase.from('avisos').insert([{ titulo, mensagem: msg }]);
-            if (error) { mostrarToast('Erro: ' + error.message, 'erro'); }
+            if (error) {
+            let msg = error.message;
+            if (msg.includes('security purposes') || msg.includes('request this after')) {
+                const s = msg.match(/\d+/) ? msg.match(/\d+/)[0] : '60';
+                msg = 'Aguarde ' + s + ' segundos antes de tentar novamente.';
+            }
+            mostrarToast(msg, 'erro');
+        }
             else { document.getElementById('modal-aviso').classList.remove('ativa'); formAviso.reset(); mostrarToast('Disparado no mural!', 'ok'); carregarAvisos(); }
             btnSubmit.innerHTML = textOriginal;
             btnSubmit.disabled = false;
@@ -1588,7 +1585,6 @@ function gerarCardHTML(l, status, isPosVenda = false) {
                 </button>
             </div>
             ${valorExibicao}
-            ${(status === 'perdidos' || l.estornado) ? '<button onclick=\"event.stopPropagation(); window.reativarLead(' + l.id + ')\" style=\"width:100%;margin-top:8px;padding:7px;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.35);border-radius:7px;color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;\"><i class=\"ph ph-arrow-counter-clockwise\"></i> Reativar Cliente</button>' : ''}
         </div>
     </div>`;
 }
@@ -1884,42 +1880,6 @@ if (formLead) {
         }
     });
 }
-
-
-/**
- * Reativar lead perdido ou estornado — move de volta para negociação
- */
-window.reativarLead = (id) => {
-    window.abrirConfirmacao(
-        '↩️ Reativar Cliente',
-        'Mover este cliente de volta para <strong>Em Negociação</strong>?<br><br>' +
-        '<span style="color:var(--muted);font-size:12px;">O histórico de perdas será mantido nos registros.</span>',
-        'Reativar',
-        async () => {
-            try {
-                const lead = leadsData.find(l => l.id === id);
-                if (!lead) return mostrarToast('Lead não encontrado.', 'erro');
-
-                const hist = lead.historico ? [...lead.historico] : [];
-                hist.push({ data: new Date().toISOString(), msg: `Cliente reativado e movido para Em Negociação por ${perfilAtual.full_name}` });
-
-                const { error } = await supabase.from('leads').update({
-                    status: 'negociacao',
-                    estornado: false,
-                    inadimplente: false,
-                    historico: hist
-                }).eq('id', id);
-
-                if (error) { mostrarToast('Erro ao reativar: ' + error.message, 'erro'); return; }
-
-                mostrarToast('✅ Cliente reativado! Está em Negociação agora.', 'ok');
-                await carregarLeads();
-            } catch (err) {
-                mostrarToast('Erro interno ao reativar cliente.', 'erro');
-            }
-        }
-    );
-};
 
 window.deletarLead = (id) => {
     window.abrirConfirmacao('Deletar Cliente', 'Tem certeza? Ação irreversível.', 'Excluir para Sempre', async () => {
@@ -2269,7 +2229,7 @@ function renderizarArena() {
     const containerPodio = document.getElementById('arena-podio');
     const containerLista = document.getElementById('arena-lista');
     if (!containerPodio || !containerLista) return;
-    const vendedores = perfisEquipe.filter(p => p.role === 'vendedor' || p.role === 'sdr' || p.role === 'gestor_sub' || p.role === 'gestor_geral');
+    const vendedores = perfisEquipe.filter(p => p.role === 'vendedor' || p.role === 'sdr');
     if (vendedores.length === 0) {
         containerPodio.innerHTML = `<div style="text-align: center; color: var(--muted); width:100%;"><i class="ph ph-users-slash" style="font-size:48px; margin-bottom:10px; display:block;"></i>Nenhum vendedor disponível para a arena.</div>`;
         containerLista.innerHTML = '';
@@ -3418,9 +3378,7 @@ window.abrirPainelAcessos = () => {
                 <select onchange="window._alterarCargoOficial('${p.id}', this.value)"
                     style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:6px;font-size:12px;outline:none;cursor:pointer;min-width:130px;"
                     ${isSelf ? 'disabled' : ''}>
-                    <option value="vendedor"     ${p.role === 'vendedor'     ? 'selected' : ''}>🧑‍💼 Vendedor</option>
-                    <option value="gestor_sub"  ${p.role === 'gestor_sub'  || p.role === 'gestor' ? 'selected' : ''}>💼 Sub Gerente</option>
-                    <option value="gestor_geral" ${p.role === 'gestor_geral' || p.role === 'admin' || p.role === 'ceo' ? 'selected' : ''}>👑 Gerente</option>
+                    ${Object.entries(rl).map(([v, l]) => `<option value="${v}" ${p.role === v ? 'selected' : ''}>${l}</option>`).join('')}
                 </select>
             </td>
             <td style="text-align:center;">
@@ -4606,28 +4564,13 @@ function inicializarOTPInputs() {
 }
 
 // Abrir modal OTP
-let otpContexto = 'cadastro'; // 'cadastro' ou 'recuperacao'
-
-function abrirModalOTP(email, contexto = 'cadastro') {
+function abrirModalOTP(email) {
     otpEmail = email;
-    otpContexto = contexto;
     const modal = document.getElementById('modal-otp');
     const desc  = document.getElementById('otp-desc');
-    const titulo = document.querySelector('#modal-otp h3');
-
-    if (contexto === 'recuperacao') {
-        if (titulo) titulo.textContent = 'Redefinir sua senha';
-        if (desc) desc.innerHTML = `Enviamos um código de <strong>6 dígitos</strong> para<br><strong style="color:#fff;">${email}</strong><br><span style="font-size:12px;color:var(--muted);margin-top:4px;display:block;">Digite o código para criar sua nova senha.</span>`;
-    } else {
-        if (titulo) titulo.textContent = 'Confirme sua identidade';
-        if (desc) desc.innerHTML = `Enviamos um código de <strong>6 dígitos</strong> para<br><strong style="color:#fff;">${email}</strong><br><span style="font-size:12px;color:var(--muted);margin-top:4px;display:block;">Digite o código para entrar na plataforma.</span>`;
-    }
-
-    // Limpar inputs e erro
-    document.querySelectorAll('.otp-digit').forEach(i => { i.value = ''; i.classList.remove('preenchido'); i.style.borderColor = ''; });
-    const erroEl = document.getElementById('otp-erro');
-    if (erroEl) erroEl.style.display = 'none';
-
+    if (desc) desc.textContent = `Enviamos um código de 6 dígitos para ${email}`;
+    // Limpar inputs
+    document.querySelectorAll('.otp-digit').forEach(i => { i.value = ''; i.classList.remove('preenchido'); });
     if (modal) {
         modal.classList.add('ativa');
         setTimeout(() => document.querySelector('.otp-digit')?.focus(), 300);
@@ -4658,12 +4601,9 @@ function iniciarTimerOTP() {
 // Reenviar OTP
 window.reenviarOTP = async () => {
     if (!otpEmail) return;
-    await supabase.auth.signInWithOtp({
-        email: otpEmail,
-        options: { shouldCreateUser: false }
-    });
+    await supabase.auth.signInWithOtp({ email: otpEmail });
     iniciarTimerOTP();
-    mostrarToast('📧 Novo código enviado para ' + otpEmail, 'ok');
+    mostrarToast('Novo código enviado para seu e-mail!', 'ok');
 };
 
 // Verificar código OTP
@@ -4695,26 +4635,13 @@ async function verificarOTP() {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ph ph-check-circle"></i> Verificar Código'; }
     } else {
         document.getElementById('modal-otp')?.classList.remove('ativa');
-
-        if (otpContexto === 'recuperacao') {
-            // OTP de recuperação validado — agora mostrar modal de nova senha
-            mostrarToast('✅ Código verificado! Crie sua nova senha.', 'ok');
-            if (data?.session) {
-                usuarioAtual = data.session.user;
-            }
-            // Abrir modal de nova senha
-            setTimeout(() => {
-                document.getElementById('modal-nova-senha')?.classList.add('ativa');
-            }, 400);
-        } else {
-            // OTP de cadastro/login validado — entrar na plataforma
-            mostrarToast('✅ Identidade verificada! Entrando no sistema...', 'ok');
-            if (data?.session) {
-                usuarioAtual = data.session.user;
-                await verificarPerfil();
-            } else if (usuarioAtual) {
-                await iniciarApp();
-            }
+        mostrarToast('✅ Identidade verificada! Entrando no sistema...', 'ok');
+        // Após verificar OTP, entrar na plataforma
+        if (data?.session) {
+            usuarioAtual = data.session.user;
+            await verificarPerfil();
+        } else if (usuarioAtual) {
+            await iniciarApp();
         }
     }
 }

@@ -22,6 +22,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="hapsis-extra.css" />
 
     
     <style id="hapsis-styles">
@@ -2505,18 +2506,28 @@
     </div>
 
     <div id="modal-nova-senha" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-header">
-                <span class="modal-title">
-                    <i class="ph ph-lock-key" style="color:var(--fechados);"></i> Nova Senha
-                </span>
+        <div class="modal-box" style="max-width:420px;text-align:center;">
+            <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,rgba(74,222,128,0.15),rgba(74,222,128,0.05));border:1px solid rgba(74,222,128,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                <i class="ph ph-lock-key-open" style="font-size:30px;color:#4ade80;"></i>
             </div>
-            <form id="form-nova-senha">
+            <h3 style="font-family:var(--font-head);font-size:20px;color:var(--text);margin:0 0 6px;">Criar Nova Senha</h3>
+            <p style="color:var(--muted);font-size:13px;margin:0 0 24px;">Escolha uma senha forte para proteger sua conta.</p>
+            <form id="form-nova-senha" style="text-align:left;">
                 <div class="campo">
                     <label for="inp-nova-senha">Nova Senha</label>
-                    <input type="password" id="inp-nova-senha" required />
+                    <input type="password" id="inp-nova-senha" placeholder="Mínimo 6 caracteres..." required
+                        style="font-size:16px;letter-spacing:2px;"/>
                 </div>
-                <button type="submit" class="btn-primary" style="background:var(--fechados);">Salvar</button>
+                <div class="campo">
+                    <label for="inp-nova-senha-confirm">Confirmar Nova Senha</label>
+                    <input type="password" id="inp-nova-senha-confirm" placeholder="Repita a senha..." required/>
+                </div>
+                <div id="nova-senha-erro" style="display:none;background:rgba(240,82,82,0.1);border:1px solid rgba(240,82,82,0.3);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--danger);">
+                    <i class="ph ph-warning-circle"></i> As senhas não coincidem.
+                </div>
+                <button type="submit" class="btn-primary" style="background:linear-gradient(135deg,#4ade80,#22c55e);color:#0a0c11;font-size:15px;margin-top:4px;">
+                    <i class="ph ph-check-circle"></i> Salvar Nova Senha
+                </button>
             </form>
         </div>
     </div>
