@@ -24,7 +24,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <link rel="stylesheet" href="style.css" />
-    <link rel="stylesheet" href="hapsis-extra.css" />
+
 
     
     <style id="hapsis-styles">
@@ -57,6 +57,13 @@
             min-height: 100vh;
             overflow: hidden;
             font-family: 'Sora', 'DM Sans', sans-serif;
+        }
+        /* Garantir que tela-auth some quando não ativa */
+        #tela-auth:not(.ativa) {
+            display: none !important;
+        }
+        #tela-app.ativa {
+            display: flex !important;
         }
         .grid-line-h {
             position: absolute; left: 0; right: 0; height: 1px;
@@ -479,6 +486,9 @@
                     </button>
                     <button class="nav-item" data-aba="aba-relatorio">
                         <i class="ph ph-chart-pie-slice"></i> Meu Relatório
+                    </button>
+                    <button class="nav-item" data-aba="aba-pos-venda">
+                        <i class="ph ph-users-three"></i> Pós-Venda
                     </button>
                 </div>
 
@@ -2033,7 +2043,7 @@
                         <input type="number" id="inp-edit-prod-comissao" step="0.1" required />
                     </div>
                 </div>
-                <button type="submit" class="btn-primary" style="background:var(--novos); color:#0a0c11;">
+                <button type="button" class="btn-primary" style="background:var(--novos); color:#0a0c11;" onclick="window._salvarEdicaoProduto()">
                     <i class="ph ph-check-circle"></i> Salvar Alterações
                 </button>
             </form>
@@ -2370,14 +2380,14 @@
                 <div style="display:flex; gap:16px;">
                     <div class="campo">
                         <label for="inp-desp-valor">Valor (R$)</label>
-                        <input type="number" id="inp-desp-valor" step="0.01" required />
+                        <input type="number" id="inp-desp-valor" step="0.01" />
                     </div>
                     <div class="campo">
                         <label for="inp-desp-data">Data de Vencimento</label>
-                        <input type="date" id="inp-desp-data" required />
+                        <input type="date" id="inp-desp-data" />
                     </div>
                 </div>
-                <button type="submit" class="btn-danger" style="background:var(--danger); color:#fff;">
+                <button type="button" class="btn-danger" style="background:var(--danger); color:#fff;" onclick="window._salvarDespesa()">
                     <i class="ph ph-check"></i> Registrar Saída
                 </button>
             </form>

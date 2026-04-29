@@ -413,6 +413,15 @@ body::before {
 ====================================================================== */
 .campo {
     margin-bottom: 20px;
+    position: relative;
+}
+
+/* Fix calendário customizado dentro de .campo */
+.campo .hapsis-datepicker-wrap {
+    width: 100%;
+}
+.campo .hapsis-date-input {
+    padding-left: 44px;
 }
 
 .campo label {
@@ -2245,16 +2254,19 @@ body::before {
                         justify-content: center;
                         align-items: flex-end;
                         gap: 16px;
-                        margin: 32px 0;
-                        min-height: 240px;
+                        margin: 48px 0 32px 0;
+                        min-height: 280px;
+                        overflow: visible;
                     }
                     .podium-item {
                         display: flex;
                         flex-direction: column;
                         align-items: center;
-                        width: 170px;
+                        width: 180px;
                         position: relative;
                         animation: fadeIn 0.8s var(--spring-smooth);
+                        overflow: visible;
+                        padding-top: 48px;
                     }
                     .podium-avatar {
                         width: 60px;
@@ -2269,7 +2281,8 @@ body::before {
                         font-weight: bold;
                         color: var(--text);
                         z-index: 2;
-                        margin-bottom: -14px;
+                        margin-bottom: -20px;
+                        z-index: 3;
                         box-shadow: 0 12px 30px rgba(0,0,0,0.6), inset 0 2px 0 rgba(255,255,255,0.1);
                     }
                     .podium-block {
@@ -2321,7 +2334,8 @@ body::before {
                         background: linear-gradient(180deg, rgba(255,215,0,0.22) 0%, rgba(255,215,0,0.05) 100%), rgba(20,23,32,0.6);
                         border: 1px solid rgba(255,215,0,0.35);
                         border-bottom: none;
-                        height: 170px;
+                        min-height: 170px;
+                        height: auto;
                     }
                     .podio-1 .podium-block strong {
                         color: #ffd700;
@@ -2335,7 +2349,8 @@ body::before {
                         background: linear-gradient(180deg, rgba(192,192,192,0.15) 0%, rgba(192,192,192,0.04) 100%), rgba(20,23,32,0.6);
                         border: 1px solid rgba(192,192,192,0.3);
                         border-bottom: none;
-                        height: 130px;
+                        min-height: 130px;
+                        height: auto;
                     }
                     .podio-2 .podium-block strong {
                         color: #c0c0c0;
@@ -2348,14 +2363,15 @@ body::before {
                         background: linear-gradient(180deg, rgba(205,127,50,0.15) 0%, rgba(205,127,50,0.04) 100%), rgba(20,23,32,0.6);
                         border: 1px solid rgba(205,127,50,0.3);
                         border-bottom: none;
-                        height: 100px;
+                        min-height: 100px;
+                        height: auto;
                     }
                     .podio-3 .podium-block strong {
                         color: #cd7f32;
                     }
                     .crown-icon {
                         position: absolute;
-                        top: -34px;
+                        top: 0;
                         font-size: 30px;
                         color: #ffd700;
                         filter: drop-shadow(0 0 12px rgba(255,215,0,0.7));

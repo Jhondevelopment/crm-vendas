@@ -149,10 +149,18 @@ function getSaudacao() {
 }
 
 function mudarTela(id) {
-    const telas = document.querySelectorAll('.tela');
-    telas.forEach(t => { t.classList.remove('ativa'); });
+    document.querySelectorAll('.tela').forEach(t => {
+        t.classList.remove('ativa');
+        t.style.display = 'none';
+        t.style.visibility = '';
+        t.style.opacity = '';
+        t.style.pointerEvents = '';
+    });
     const telaDestino = document.getElementById(id);
-    if (telaDestino) telaDestino.classList.add('ativa');
+    if (telaDestino) {
+        telaDestino.style.cssText = '';
+        telaDestino.classList.add('ativa');
+    }
 }
 
 window.abrirConfirmacao = (titulo, mensagem, textoBotaoAcao, callback) => {
@@ -466,6 +474,14 @@ if (btnLogin) {
             btnLogin.style.opacity = '0.85';
             btnLogin.disabled = true;
 
+            // Resetar estado global para evitar sessão corrompida de login anterior
+            _verificandoPerfil = false;
+            perfilAtual = null;
+            usuarioAtual = null;
+
+            // Limpar sessão anterior do localStorage para evitar token inválido
+            try { await supabase.auth.signOut(); } catch(e) {}
+
             try {
                 const { data, error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) {
@@ -479,7 +495,9 @@ if (btnLogin) {
                 } else {
                     // Login OK — chamar verificarPerfil diretamente
                     usuarioAtual = data.user;
+                    _verificandoPerfil = true;
                     await verificarPerfil();
+                    _verificandoPerfil = false;
                 }
             } catch (err) {
                 mostrarToast('Erro de conexão.', 'erro');
@@ -648,15 +666,30 @@ if (btnLogout) {
 
 // Sessão verificada abaixo
 
+// Flag global para evitar chamadas paralelas de verificarPerfil
+let _verificandoPerfil = false;
+
 // Verificar sessão ao carregar
 (async () => {
     try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session && session.user) {
+        const { data: { session }, error: sessErr } = await supabase.auth.getSession();
+
+        // Sessão inválida ou expirada — limpar e mostrar login limpo
+        if (sessErr || (session && !session.user)) {
+            await supabase.auth.signOut();
+            return;
+        }
+
+        if (session && session.user && !_verificandoPerfil) {
+            _verificandoPerfil = true;
             usuarioAtual = session.user;
             await verificarPerfil();
+            _verificandoPerfil = false;
         }
-    } catch (err) { /* tela de login já visível */ }
+    } catch (err) {
+        _verificandoPerfil = false;
+        try { await supabase.auth.signOut(); } catch(e) {}
+    }
 })();
 
 // PASSO 3: Listener de mudança de estado (logout, troca de aba, token expirado)
@@ -687,6 +720,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_OUT') {
         usuarioAtual = null;
         perfilAtual  = null;
+        _verificandoPerfil = false;
         // Esconder chat IA
         const chatBtn    = document.getElementById('chat-ia-btn');
         const chatJanela = document.getElementById('chat-ia-janela');
@@ -697,7 +731,8 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         return;
     }
 
-    if (event === 'SIGNED_IN' && session && !perfilAtual && !isRegistering && !isRecuperandoSenha) {
+    if (event === 'SIGNED_IN' && session && !perfilAtual && !isRegistering && !isRecuperandoSenha && !_verificandoPerfil) {
+        _verificandoPerfil = true;
         usuarioAtual = session.user;
 
         // Verificar se tem perfil pendente de criação (vem de cadastro com confirmação de email)
@@ -717,6 +752,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         }
 
         await verificarPerfil();
+        _verificandoPerfil = false;
     }
 });
 
@@ -786,15 +822,29 @@ window._reenviarConfirmacao = async () => {
 };
 
 async function verificarPerfil() {
-    let { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', usuarioAtual.id)
-        .single();
+    // Helper com timeout de 8s para evitar travar indefinidamente
+    function queryComTimeout(ms) {
+        return Promise.race([
+            supabase.from('profiles').select('*').eq('id', usuarioAtual.id).single(),
+            new Promise(resolve => setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), ms))
+        ]);
+    }
 
-    if (error || !data) {
+    const resetBtn = () => {
+        if (btnLogin) {
+            btnLogin.disabled = false;
+            btnLogin.innerText = 'Entrar no HAPSIS';
+            btnLogin.style.opacity = '1';
+            btnLogin.style.transform = 'none';
+        }
+    };
+
+    let { data, error } = await queryComTimeout(8000);
+
+    if (!data) {
+        // Retry após 1.5s
         await new Promise(r => setTimeout(r, 1500));
-        let retry = await supabase.from('profiles').select('*').eq('id', usuarioAtual.id).single();
+        const retry = await queryComTimeout(8000);
         data = retry.data;
     }
 
@@ -802,18 +852,17 @@ async function verificarPerfil() {
         if (data.suspended === true) {
             await supabase.auth.signOut();
             mostrarToast('🔒 Acesso suspenso. Contate o administrador.', 'erro');
-            if (btnLogin) { btnLogin.disabled = false; btnLogin.innerText = 'Entrar no HAPSIS'; btnLogin.style.opacity = '1'; btnLogin.style.transform = 'none'; }
+            resetBtn();
             return;
         }
         perfilAtual = data;
         perfilAtual.role = normalizarRole(perfilAtual.role);
-        // Resetar botão ANTES de iniciarApp para não ficar preso
-        if (btnLogin) { btnLogin.disabled = false; btnLogin.innerText = 'Entrar no HAPSIS'; btnLogin.style.opacity = '1'; btnLogin.style.transform = 'none'; }
+        resetBtn();
         iniciarApp();
     } else {
+        resetBtn();
         await supabase.auth.signOut();
-        if (btnLogin) { btnLogin.disabled = false; btnLogin.innerText = 'Entrar no HAPSIS'; btnLogin.style.opacity = '1'; btnLogin.style.transform = 'none'; }
-        mostrarToast('Perfil não encontrado. Contate o administrador.', 'erro');
+        mostrarToast('Não foi possível carregar o perfil. Verifique sua conexão e tente novamente.', 'erro');
     }
 }
 
@@ -823,10 +872,16 @@ async function verificarPerfil() {
  * ============================================================================
  */
 async function iniciarApp() {
-    // Garantir que tela de auth está escondida e app vai aparecer suavemente
+    // Esconder tela de login com força máxima — triple garantia
     const authEl = document.getElementById('tela-auth');
     const appEl  = document.getElementById('tela-app');
-    if (authEl) { authEl.classList.remove('ativa'); }
+    if (authEl) {
+        authEl.classList.remove('ativa');
+        authEl.style.cssText = 'display: none !important; visibility: hidden; opacity: 0; pointer-events: none;';
+    }
+    if (appEl) {
+        appEl.style.display = '';
+    }
 
     const elUserNome = document.getElementById('user-nome');
     if (elUserNome) {
@@ -865,6 +920,9 @@ async function iniciarApp() {
     // RBAC simplificado — 3 módulos limpos
     if (role === 'vendedor' || role === 'sdr' || role === 'cs' || role === 'marketing') {
         document.querySelectorAll('.modulo-vendas').forEach(el => el.classList.remove('hidden'));
+        // Garantir que aba pós-venda está acessível para vendedor
+        const btnPosVenda = document.querySelector('[data-aba="aba-pos-venda"]');
+        if (btnPosVenda) btnPosVenda.closest('.nav-group')?.classList.remove('hidden');
     } else if (role === 'gestor_sub') {
         document.querySelectorAll('.modulo-cfo').forEach(el => el.classList.remove('hidden'));
     } else if (role === 'gestor_geral') {
@@ -1190,10 +1248,10 @@ window.deletarProduto = (id) => {
     });
 };
 window.editarProduto = (id) => {
-    const prod = produtosData.find(p => p.id === id);
+    // Comparação loose (==) pois id pode vir como string do HTML ou número do banco
+    const prod = produtosData.find(p => p.id == id);
     if (!prod) return mostrarToast('Produto não encontrado.', 'erro');
 
-    // Preencher modal de edição
     document.getElementById('inp-edit-prod-id').value = prod.id;
     document.getElementById('inp-edit-prod-nome').value = prod.nome;
     document.getElementById('inp-edit-prod-preco').value = prod.valor;
@@ -1202,40 +1260,44 @@ window.editarProduto = (id) => {
 };
 
 const formEditarProduto = document.getElementById('form-editar-produto');
-if (formEditarProduto) {
-    formEditarProduto.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            const btnSubmit = formEditarProduto.querySelector('button[type="submit"]');
-            const textOriginal = btnSubmit.innerHTML;
-            btnSubmit.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Salvando...';
-            btnSubmit.disabled = true;
 
-            const id    = document.getElementById('inp-edit-prod-id').value;
-            const nome  = document.getElementById('inp-edit-prod-nome').value.trim().toUpperCase();
-            const valor = parseFloat(document.getElementById('inp-edit-prod-preco').value);
-            const taxa  = parseFloat(document.getElementById('inp-edit-prod-comissao').value);
+window._salvarEdicaoProduto = async function() {
+    const btn = document.querySelector('#form-editar-produto button[type="button"]');
+    const textOriginal = btn ? btn.innerHTML : '';
+    if (btn) { btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Salvando...'; btn.disabled = true; }
+    try {
+        const idRaw = document.getElementById('inp-edit-prod-id').value;
+        const id    = parseInt(idRaw, 10);
+        const nome  = (document.getElementById('inp-edit-prod-nome').value || '').trim().toUpperCase();
+        const valor = parseFloat(document.getElementById('inp-edit-prod-preco').value);
+        const taxa  = parseFloat(document.getElementById('inp-edit-prod-comissao').value);
 
-            if (!nome) { mostrarToast('Informe o nome.', 'erro'); btnSubmit.innerHTML = textOriginal; btnSubmit.disabled = false; return; }
-            if (isNaN(valor) || valor < 0) { mostrarToast('Preço inválido.', 'erro'); btnSubmit.innerHTML = textOriginal; btnSubmit.disabled = false; return; }
-            if (isNaN(taxa) || taxa < 0 || taxa > 100) { mostrarToast('Comissão entre 0 e 100%.', 'erro'); btnSubmit.innerHTML = textOriginal; btnSubmit.disabled = false; return; }
+        if (!nome)                              { mostrarToast('Informe o nome.', 'erro');          if (btn) { btn.innerHTML = textOriginal; btn.disabled = false; } return; }
+        if (isNaN(valor) || valor < 0)          { mostrarToast('Preço inválido.', 'erro');          if (btn) { btn.innerHTML = textOriginal; btn.disabled = false; } return; }
+        if (isNaN(taxa) || taxa < 0 || taxa > 100) { mostrarToast('Comissão entre 0 e 100%.', 'erro'); if (btn) { btn.innerHTML = textOriginal; btn.disabled = false; } return; }
+        if (!idRaw || isNaN(id))                { mostrarToast('ID do produto inválido.', 'erro'); if (btn) { btn.innerHTML = textOriginal; btn.disabled = false; } return; }
 
-            const { error } = await supabase.from('produtos').update({ nome, valor, taxa_comissao: taxa }).eq('id', id);
+        const { data, error } = await supabase
+            .from('produtos')
+            .update({ nome, valor, taxa_comissao: taxa })
+            .eq('id', id)
+            .select();
 
-            btnSubmit.innerHTML = textOriginal;
-            btnSubmit.disabled = false;
+        if (btn) { btn.innerHTML = textOriginal; btn.disabled = false; }
 
-            if (error) {
-                mostrarToast('Erro ao salvar: ' + error.message, 'erro');
-            } else {
-                document.getElementById('modal-editar-produto').classList.remove('ativa');
-                formEditarProduto.reset();
-                mostrarToast(`Produto "${nome}" atualizado!`, 'ok');
-                carregarProdutos();
-            }
-        } catch (err) { mostrarToast('Erro interno.', 'erro'); }
-    });
-}
+        if (error) {
+            mostrarToast('Erro ao salvar: ' + error.message, 'erro');
+        } else {
+            document.getElementById('modal-editar-produto')?.classList.remove('ativa');
+            document.getElementById('form-editar-produto')?.reset();
+            mostrarToast('Produto atualizado com sucesso!', 'ok');
+            await carregarProdutos();
+        }
+    } catch (err) {
+        if (btn) { btn.innerHTML = textOriginal; btn.disabled = false; }
+        mostrarToast('Erro interno: ' + (err.message || err), 'erro');
+    }
+};
 
 /**
  * ============================================================================
@@ -2232,9 +2294,9 @@ function renderizarArena() {
     const containerPodio = document.getElementById('arena-podio');
     const containerLista = document.getElementById('arena-lista');
     if (!containerPodio || !containerLista) return;
-    const vendedores = perfisEquipe.filter(p => p.role === 'vendedor' || p.role === 'sdr');
+    const vendedores = perfisEquipe.filter(p => ['vendedor','sdr','gestor_sub','gestor_geral'].includes(p.role));
     if (vendedores.length === 0) {
-        containerPodio.innerHTML = `<div style="text-align: center; color: var(--muted); width:100%;"><i class="ph ph-users-slash" style="font-size:48px; margin-bottom:10px; display:block;"></i>Nenhum vendedor disponível para a arena.</div>`;
+        containerPodio.innerHTML = `<div style="text-align: center; color: var(--muted); width:100%;"><i class="ph ph-users-slash" style="font-size:48px; margin-bottom:10px; display:block;"></i>Nenhum membro disponível para a arena.</div>`;
         containerLista.innerHTML = '';
         return;
     }
@@ -2244,19 +2306,13 @@ function renderizarArena() {
         return { ...v, receita, qtd: fechados.length };
     }).sort((a, b) => b.receita - a.receita);
 
-    if (ranking[0].receita === 0) {
-        containerPodio.innerHTML = `<div style="text-align: center; color: var(--muted); width:100%;"><i class="ph ph-ghost" style="font-size:48px; margin-bottom:10px; display:block;"></i>A arena está vazia! Nenhuma venda finalizada ainda.</div>`;
-        containerLista.innerHTML = '';
-        return;
-    }
-
     let podioHtml = '';
     if (ranking[0]) podioHtml += gerarCardPodio(ranking[0], 1);
-    if (ranking[1] && ranking[1].receita > 0) podioHtml = gerarCardPodio(ranking[1], 2) + podioHtml;
-    if (ranking[2] && ranking[2].receita > 0) podioHtml += gerarCardPodio(ranking[2], 3);
+    if (ranking[1]) podioHtml = gerarCardPodio(ranking[1], 2) + podioHtml;
+    if (ranking[2]) podioHtml += gerarCardPodio(ranking[2], 3);
     containerPodio.innerHTML = podioHtml;
 
-    let resto = ranking.slice(3).concat(ranking.filter(r => r.receita === 0 && ranking.indexOf(r) < 3));
+    let resto = ranking.slice(3);
     if (resto.length > 0) {
         containerLista.innerHTML = resto.map((v, i) => {
             const inicial = v.full_name ? v.full_name.charAt(0).toUpperCase() : 'V';
@@ -2526,20 +2582,18 @@ function renderizarAprovacoes() {
     }
     tbody.innerHTML = pendentes.map(l => {
         let vendedor = perfisEquipe.find(p => p.id === l.user_id)?.full_name || 'Desconhecido';
-        let btnComprovante = l.comprovante_url
-            ? `<a href="${l.comprovante_url}" target="_blank" class="btn-anexo"><i class="ph ph-receipt"></i> Ver Anexo</a>`
-            : `<span style="font-size:11px; color:var(--danger); border:1px dashed var(--danger); padding:6px 12px; border-radius:6px; display:flex; align-items:center; gap:4px;"><i class="ph ph-warning-circle"></i> Sem Anexo</span>`;
+        let docsHtml = '';
+        if (l.comprovante_url)    docsHtml += `<a href="${l.comprovante_url}" target="_blank" class="btn-anexo" style="border-color:var(--novos);color:var(--novos);"><i class="ph ph-receipt"></i> Comprovante</a>`;
+        if (l.contrato_url)       docsHtml += `<a href="${l.contrato_url}" target="_blank" class="btn-anexo" style="border-color:#b388ff;color:#b388ff;"><i class="ph ph-folder-lock"></i> Contrato</a>`;
+        if (l.doc_importante_url) docsHtml += `<a href="${l.doc_importante_url}" target="_blank" class="btn-anexo" style="border-color:#4fc3f7;color:#4fc3f7;"><i class="ph ph-file-text"></i> Doc</a>`;
+        if (!docsHtml) docsHtml = `<span style="font-size:11px;color:var(--danger);border:1px dashed var(--danger);padding:6px 12px;border-radius:6px;display:flex;align-items:center;gap:4px;"><i class="ph ph-warning-circle"></i> Sem Anexo</span>`;
         return `
         <tr>
             <td style="font-weight: bold; color: var(--text);">${vendedor}</td>
             <td style="color: var(--muted);">${l.nome}</td>
             <td><span class="badge badge-equipe">${l.produto || 'Geral'}</span></td>
             <td style="color:var(--fechados); font-weight:bold; text-align:right;">R$ ${Number(l.valor).toFixed(2)}</td>
-            <td style="text-align: right; display:flex; gap:12px; justify-content:flex-end; align-items:center;">
-                ${btnComprovante}
-                <button onclick="window.rejeitarVenda(${l.id})" class="btn-rejeitar"><i class="ph ph-x"></i> Rejeitar</button>
-                <button onclick="window.aprovarVenda(${l.id})" class="btn-aprovar"><i class="ph ph-check-circle"></i> Aprovar</button>
-            </td>
+            <td style="text-align:right;"><div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">${docsHtml}<button onclick="window.rejeitarVenda(${l.id})" class="btn-rejeitar"><i class="ph ph-x"></i> Rejeitar</button><button onclick="window.aprovarVenda(${l.id})" class="btn-aprovar"><i class="ph ph-check-circle"></i> Aprovar</button></div></td>
         </tr>`;
     }).join('');
 }
@@ -2631,19 +2685,42 @@ window.deletarDespesa = async (id) => {
 };
 
 const formDespesa = document.getElementById('form-despesa');
-if (formDespesa) {
-    formDespesa.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            const desc = document.getElementById('inp-desp-desc').value;
-            const val = document.getElementById('inp-desp-valor').value;
-            const dataV = document.getElementById('inp-desp-data').value;
-            const { error } = await supabase.from('despesas').insert([{ descricao: desc, valor: val, vencimento: dataV, status: 'Pendente' }]);
-            if (error) { mostrarToast('Erro interno ao salvar despesa.', 'erro'); }
-            else { document.getElementById('modal-despesa').classList.remove('ativa'); formDespesa.reset(); mostrarToast('Nova Despesa Operacional registrada na matriz.', 'ok'); carregarDespesas(); }
-        } catch(err) {  }
-    });
-}
+
+window._salvarDespesa = async function() {
+    const btn = document.querySelector('#form-despesa button[type="button"]');
+    const textOriginal = btn ? btn.innerHTML : '';
+    if (btn) { btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Salvando...'; btn.disabled = true; }
+    try {
+        const desc  = (document.getElementById('inp-desp-desc')?.value || '').trim();
+        const val   = document.getElementById('inp-desp-valor')?.value;
+        const dataV = document.getElementById('inp-desp-data')?.value;
+
+        if (!desc)  { mostrarToast('Informe a descrição do custo.', 'erro'); if (btn) { btn.innerHTML = textOriginal; btn.disabled = false; } return; }
+        if (!val || isNaN(parseFloat(val)) || parseFloat(val) <= 0) { mostrarToast('Informe um valor válido.', 'erro'); if (btn) { btn.innerHTML = textOriginal; btn.disabled = false; } return; }
+        if (!dataV) { mostrarToast('Selecione a data de vencimento.', 'erro'); if (btn) { btn.innerHTML = textOriginal; btn.disabled = false; } return; }
+
+        const { error } = await supabase.from('despesas').insert([{
+            descricao: desc,
+            valor: parseFloat(val),
+            vencimento: dataV,
+            status: 'Pendente'
+        }]);
+
+        if (btn) { btn.innerHTML = textOriginal; btn.disabled = false; }
+
+        if (error) {
+            mostrarToast('Erro ao salvar: ' + error.message, 'erro');
+        } else {
+            document.getElementById('modal-despesa')?.classList.remove('ativa');
+            formDespesa?.reset();
+            mostrarToast('Despesa registrada com sucesso!', 'ok');
+            carregarDespesas();
+        }
+    } catch(err) {
+        if (btn) { btn.innerHTML = textOriginal; btn.disabled = false; }
+        mostrarToast('Erro inesperado ao salvar despesa.', 'erro');
+    }
+};
 
 /**
  * ============================================================================
@@ -2832,10 +2909,17 @@ window.quitarInadimplencia = async (leadId) => {
             const lead = leadsData.find(l => l.id == leadId);
             let historicoAtual = lead.historico || [];
             historicoAtual.push({ data: new Date().toISOString(), msg: `✅ Dívida Quitada. Marcado como PAGO na cobrança por ${perfilAtual.full_name}` });
-            await supabase.from('leads').update({ is_inadimplente: false, historico: historicoAtual }).eq('id', leadId);
-            mostrarToast('Pagamento registrado. Cliente recuperado e o valor voltou para o sistema!', 'ok');
+            // Zerar inadimplência E limpar data_vencimento para não reaparecer como vencido
+            await supabase.from('leads').update({
+                is_inadimplente: false,
+                data_vencimento: null,
+                historico: historicoAtual
+            }).eq('id', leadId);
+            // Limpar flag local imediatamente
+            if (lead) { lead._vencidoLocal = false; lead._diasVencido = 0; }
+            mostrarToast('Pagamento registrado. Cliente recuperado!', 'ok');
             carregarLeads();
-        } catch(err) {  }
+        } catch(err) { mostrarToast('Erro ao registrar pagamento.', 'erro'); }
     });
 };
 
@@ -4709,3 +4793,32 @@ document.querySelectorAll('.modal-overlay').forEach(modal => {
 // Aplicar fix inicial e após carregamento
 setTimeout(window._fixSelectsDark, 500);
 setTimeout(window._fixSelectsDark, 2000);
+// CPF helpers
+window.formatarCPF = function(input) {
+    let v = input.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+    else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+    input.value = v;
+};
+window.consultarCPF = async function() {
+    const cpfInput = document.getElementById('inp-cpf');
+    if (!cpfInput || cpfInput.value.replace(/\D/g,'').length < 11) return;
+    const statusEl = document.getElementById('cpf-status');
+    const dadosBox = document.getElementById('cpf-dados-encontrados');
+    const resumoEl = document.getElementById('cpf-resumo');
+    if (statusEl) { statusEl.textContent = '⏳ Buscando...'; statusEl.style.color = 'var(--muted)'; }
+    try {
+        const { data } = await supabase.from('leads').select('*').ilike('cpf', cpfInput.value).limit(1);
+        if (data && data.length > 0) {
+            const l = data[0];
+            if (statusEl) { statusEl.textContent = '✅ Encontrado'; statusEl.style.color = 'var(--fechados)'; }
+            [['inp-nome',l.nome],['inp-email',l.email],['inp-whatsapp',l.whatsapp],['inp-produto',l.produto]].forEach(([id,val]) => { const el = document.getElementById(id); if (el && val) el.value = val; });
+            if (dadosBox) dadosBox.style.display = 'block';
+            if (resumoEl) resumoEl.innerHTML = `<strong>${l.nome}</strong> — ${l.whatsapp || ''}`;
+        } else {
+            if (statusEl) { statusEl.textContent = '🔍 Não encontrado'; statusEl.style.color = 'var(--muted)'; }
+            if (dadosBox) dadosBox.style.display = 'none';
+        }
+    } catch(e) { if (statusEl) statusEl.textContent = ''; }
+};
