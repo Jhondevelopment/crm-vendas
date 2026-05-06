@@ -166,6 +166,10 @@
         /* ── KANBAN — scroll correto ── */
         .kanban-board { display: grid !important; grid-template-columns: repeat(5, minmax(220px, 1fr)) !important; gap: 14px !important; overflow-x: auto !important; padding-bottom: 12px !important; width: 100% !important; }
         #aba-kanban { overflow-x: auto !important; min-width: 0 !important; }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+        }
 
         /* ── CHAT IA ── */
         @keyframes pulse-ia { 0%, 100% { box-shadow: 0 8px 32px rgba(124,58,237,0.5); } 50% { box-shadow: 0 8px 40px rgba(124,58,237,0.8), 0 0 0 8px rgba(124,58,237,0.1); } }
@@ -490,6 +494,10 @@
                     <button class="nav-item" data-aba="aba-pos-venda">
                         <i class="ph ph-users-three"></i> Pós-Venda
                     </button>
+                    <button class="nav-item" data-aba="aba-whatsapp-leads" style="color:#25d366; font-weight:700;" id="btn-nav-whatsapp-leads">
+                        <i class="ph ph-whatsapp-logo" style="color:#25d366;"></i> WhatsApp
+                        <span class="badge hidden" id="badge-wpp-leads" style="background:rgba(37,211,102,0.2); color:#25d366; border:1px solid rgba(37,211,102,0.4); margin-left:auto;">0</span>
+                    </button>
                 </div>
 
                 <!-- ================================================
@@ -561,6 +569,10 @@
                     </button>
                     <button class="nav-item" data-aba="aba-arena">
                         <i class="ph ph-trophy"></i> Arena de Vendas
+                    </button>
+                    <button class="nav-item" data-aba="aba-central-whatsapp" style="color:#25d366; font-weight:700;">
+                        <i class="ph ph-whatsapp-logo" style="color:#25d366;"></i> Central WhatsApp
+                        <span class="badge hidden" id="badge-wpp-central" style="background:rgba(37,211,102,0.2); color:#25d366; border:1px solid rgba(37,211,102,0.4); margin-left:auto;">0</span>
                     </button>
 
                     <div class="sidebar-category cat-diretoria" style="margin-top:20px;">
@@ -759,6 +771,267 @@
                             </thead>
                             <tbody id="tbody-lista"></tbody>
                         </table>
+                    </div>
+                </section>
+
+                <!-- ============================================================
+                     ABA: WHATSAPP LEADS (Vendedor)
+                     ============================================================ -->
+                <section id="aba-whatsapp-leads" class="aba-conteudo hidden">
+                    <div style="padding:24px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
+                            <div>
+                                <h2 style="font-family:var(--font-head); font-size:22px; color:var(--text); margin:0 0 6px; display:flex; align-items:center; gap:10px;">
+                                    <i class="ph ph-whatsapp-logo" style="color:#25d366; font-size:26px;"></i>
+                                    Leads do WhatsApp
+                                </h2>
+                                <p style="color:var(--muted); font-size:13px; margin:0;">Clientes que chegaram automaticamente via WhatsApp</p>
+                            </div>
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <div id="wpp-stat-total" style="background:rgba(37,211,102,0.1); border:1px solid rgba(37,211,102,0.3); border-radius:10px; padding:10px 18px; text-align:center;">
+                                    <div style="font-size:22px; font-weight:800; color:#25d366; font-family:var(--font-head);">0</div>
+                                    <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Total</div>
+                                </div>
+                                <div id="wpp-stat-hoje" style="background:rgba(245,197,24,0.1); border:1px solid rgba(245,197,24,0.3); border-radius:10px; padding:10px 18px; text-align:center;">
+                                    <div style="font-size:22px; font-weight:800; color:var(--accent); font-family:var(--font-head);">0</div>
+                                    <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Hoje</div>
+                                </div>
+                                <button onclick="window.abrirConectarWpp()" id="btn-conectar-wpp"
+                                    style="padding:10px 16px; background:rgba(37,211,102,0.12); border:1px solid rgba(37,211,102,0.4); color:#25d366; border-radius:10px; cursor:pointer; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px; white-space:nowrap; transition:.2s;"
+                                    onmouseover="this.style.background='rgba(37,211,102,0.22)'" onmouseout="this.style.background='rgba(37,211,102,0.12)'">
+                                    <i class="ph ph-qr-code"></i> Conectar WhatsApp
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Cards dos leads WhatsApp -->
+                        <div id="wpp-leads-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:16px;">
+                            <div class="empty-state">
+                                <i class="ph ph-whatsapp-logo" style="font-size:48px; color:#25d366; opacity:0.4;"></i>
+                                <p>Nenhum lead do WhatsApp ainda.<br>Quando a integração estiver ativa, eles aparecem aqui automaticamente.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============================================================
+                     ABA: WHATSAPP COMPLETO — Interface WhatsApp Web
+                     ============================================================ -->
+                <section id="aba-central-whatsapp" class="aba-conteudo hidden" style="padding:0; height:calc(100vh - 64px); overflow:hidden; background:#0b0e14;">
+
+                    <div style="display:flex; height:100%; overflow:hidden;">
+
+                        <!-- ══════════════════════════════════════════
+                             SIDEBAR ESQUERDA — Lista de Conversas
+                        ══════════════════════════════════════════ -->
+                        <div id="wpp-lista-col" style="width:360px; min-width:300px; max-width:360px; display:flex; flex-direction:column; background:#111418; border-right:1px solid rgba(255,255,255,0.06); overflow:hidden; flex-shrink:0;">
+
+                            <!-- Topo da sidebar -->
+                            <div style="padding:16px 16px 0; background:#111418; flex-shrink:0;">
+
+                                <!-- Título + ações -->
+                                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <div style="width:36px; height:36px; border-radius:10px; background:rgba(37,211,102,0.12); border:1px solid rgba(37,211,102,0.25); display:flex; align-items:center; justify-content:center;">
+                                            <i class="ph ph-whatsapp-logo" style="color:#25d366; font-size:18px;"></i>
+                                        </div>
+                                        <div>
+                                            <div style="font-weight:800; color:#fff; font-size:14px; font-family:var(--font-head);">WhatsApp</div>
+                                            <div style="font-size:10px; color:#25d366; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">Central de Atendimento</div>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex; gap:4px;">
+                                        <button id="btn-importar-conversas" type="button" onclick="window.importarConversasWpp()"
+                                            title="Sincronizar conversas"
+                                            style="width:32px; height:32px; background:rgba(37,211,102,0.1); border:1px solid rgba(37,211,102,0.25); color:#25d366; border-radius:8px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:.2s;"
+                                            onmouseover="this.style.background='rgba(37,211,102,0.2)'" onmouseout="this.style.background='rgba(37,211,102,0.1)'">
+                                            <i class="ph ph-arrows-clockwise"></i>
+                                        </button>
+                                        <button type="button" onclick="window.abrirConectarWpp()"
+                                            title="Configurar conexão"
+                                            style="width:32px; height:32px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:rgba(255,255,255,0.5); border-radius:8px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:.2s;"
+                                            onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">
+                                            <i class="ph ph-gear"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Barra de busca -->
+                                <div style="position:relative; margin-bottom:12px;">
+                                    <i class="ph ph-magnifying-glass" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:rgba(255,255,255,0.3); font-size:14px; pointer-events:none;"></i>
+                                    <input type="text" id="wpp-busca-input" placeholder="Buscar conversa ou número..."
+                                        oninput="window.buscarConversasWpp(this.value)"
+                                        style="width:100%; padding:9px 12px 9px 36px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:#fff; font-size:13px; outline:none; box-sizing:border-box; transition:.2s;"
+                                        onfocus="this.style.borderColor='rgba(37,211,102,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'" />
+                                </div>
+
+                                <!-- Stats linha -->
+                                <div style="display:flex; gap:8px; margin-bottom:12px;">
+                                    <div style="flex:1; background:rgba(37,211,102,0.06); border:1px solid rgba(37,211,102,0.15); border-radius:8px; padding:8px; text-align:center;">
+                                        <div style="font-size:18px; font-weight:800; color:#25d366; line-height:1;" id="wpp-stat-conversas">—</div>
+                                        <div style="font-size:9px; color:rgba(255,255,255,0.35); margin-top:2px; text-transform:uppercase; letter-spacing:.5px;">Total</div>
+                                    </div>
+                                    <div style="flex:1; background:rgba(240,82,82,0.06); border:1px solid rgba(240,82,82,0.15); border-radius:8px; padding:8px; text-align:center;">
+                                        <div style="font-size:18px; font-weight:800; color:#f05252; line-height:1;" id="wpp-stat-quentes">—</div>
+                                        <div style="font-size:9px; color:rgba(255,255,255,0.35); margin-top:2px; text-transform:uppercase; letter-spacing:.5px;">Quentes</div>
+                                    </div>
+                                    <div style="flex:1; background:rgba(74,222,128,0.06); border:1px solid rgba(74,222,128,0.15); border-radius:8px; padding:8px; text-align:center;">
+                                        <div style="font-size:18px; font-weight:800; color:#4ade80; line-height:1;" id="wpp-stat-leads-auto">—</div>
+                                        <div style="font-size:9px; color:rgba(255,255,255,0.35); margin-top:2px; text-transform:uppercase; letter-spacing:.5px;">Leads</div>
+                                    </div>
+                                </div>
+
+                                <!-- Filtros pill -->
+                                <div style="display:flex; gap:4px; overflow-x:auto; padding-bottom:12px; scrollbar-width:none;">
+                                    <button type="button" onclick="window.filtrarConversasWpp('todos')" class="wpp-filtro-btn" data-filtro="todos"
+                                        style="padding:5px 14px; border-radius:20px; border:1px solid #25d366; background:#25d366; color:#000; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:.2s;">Todos</button>
+                                    <button type="button" onclick="window.filtrarConversasWpp('quente')" class="wpp-filtro-btn" data-filtro="quente"
+                                        style="padding:5px 14px; border-radius:20px; border:1px solid rgba(240,82,82,0.4); background:rgba(240,82,82,0.08); color:#f05252; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:.2s;">🔥 Quente</button>
+                                    <button type="button" onclick="window.filtrarConversasWpp('morno')" class="wpp-filtro-btn" data-filtro="morno"
+                                        style="padding:5px 14px; border-radius:20px; border:1px solid rgba(245,197,24,0.4); background:rgba(245,197,24,0.08); color:#f5c518; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:.2s;">⚡ Morno</button>
+                                    <button type="button" onclick="window.filtrarConversasWpp('frio')" class="wpp-filtro-btn" data-filtro="frio"
+                                        style="padding:5px 14px; border-radius:20px; border:1px solid rgba(122,131,161,0.3); background:rgba(122,131,161,0.06); color:rgba(255,255,255,0.4); font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:.2s;">❄️ Frio</button>
+                                    <button type="button" onclick="window.filtrarConversasWpp('lead_criado')" class="wpp-filtro-btn" data-filtro="lead_criado"
+                                        style="padding:5px 14px; border-radius:20px; border:1px solid rgba(74,222,128,0.4); background:rgba(74,222,128,0.08); color:#4ade80; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:.2s;">✅ Lead</button>
+                                </div>
+                            </div>
+
+                            <!-- Lista de conversas -->
+                            <div id="wpp-lista-conversas" style="flex:1; overflow-y:auto; overflow-x:hidden; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.08) transparent;">
+                                <div style="padding:60px 20px; text-align:center; color:rgba(255,255,255,0.25);">
+                                    <i class="ph ph-whatsapp-logo" style="font-size:40px; color:#25d366; opacity:0.2; display:block; margin-bottom:12px;"></i>
+                                    <div style="font-size:13px;">Clique em ↻ para sincronizar</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ══════════════════════════════════════════
+                             COLUNA DIREITA — Chat
+                        ══════════════════════════════════════════ -->
+                        <div id="wpp-chat-col" style="flex:1; display:flex; flex-direction:column; overflow:hidden; background:#0d1117;">
+
+                            <!-- Estado vazio -->
+                            <div id="wpp-chat-vazio" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:rgba(255,255,255,0.2); background:radial-gradient(ellipse at center, rgba(37,211,102,0.03) 0%, transparent 70%);">
+                                <div style="width:80px; height:80px; border-radius:24px; background:rgba(37,211,102,0.06); border:1px solid rgba(37,211,102,0.12); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+                                    <i class="ph ph-chats-teardrop" style="font-size:36px; color:rgba(37,211,102,0.3);"></i>
+                                </div>
+                                <p style="font-size:16px; font-weight:700; color:rgba(255,255,255,0.5); margin-bottom:6px; font-family:var(--font-head);">Selecione uma conversa</p>
+                                <p style="font-size:13px; color:rgba(255,255,255,0.2);">Clique em um contato para ver o histórico</p>
+                            </div>
+
+                            <!-- Chat ativo -->
+                            <div id="wpp-chat-ativo" style="flex:1; display:none; flex-direction:column; overflow:hidden;">
+
+                                <!-- Header do chat -->
+                                <div id="wpp-chat-header" style="padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; backdrop-filter:blur(20px);">
+                                    <div style="display:flex; align-items:center; gap:12px;">
+                                        <div id="wpp-chat-avatar" style="width:42px; height:42px; border-radius:50%; background:rgba(37,211,102,0.15); border:2px solid rgba(37,211,102,0.3); display:flex; align-items:center; justify-content:center; font-weight:800; color:#25d366; font-size:16px; overflow:hidden; flex-shrink:0;">?</div>
+                                        <div>
+                                            <div id="wpp-chat-nome" style="font-weight:700; color:#fff; font-size:14px; font-family:var(--font-head);">—</div>
+                                            <div id="wpp-chat-numero" style="font-size:11px; color:rgba(255,255,255,0.35);">—</div>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <div id="wpp-chat-score-badge" style="background:rgba(37,211,102,0.1); border:1px solid rgba(37,211,102,0.25); border-radius:20px; padding:4px 12px; font-size:11px; font-weight:700; color:#25d366;"></div>
+                                        <button id="wpp-btn-criar-lead" onclick="window.criarLeadDoChat()"
+                                            style="padding:6px 14px; background:rgba(245,197,24,0.1); border:1px solid rgba(245,197,24,0.25); color:#f5c518; border-radius:8px; cursor:pointer; font-size:12px; font-weight:700; display:none; transition:.2s;">
+                                            <i class="ph ph-user-plus"></i> Criar Lead
+                                        </button>
+                                        <button id="wpp-btn-ver-lead" onclick="window.verLeadDoChat()"
+                                            style="padding:6px 14px; background:rgba(74,222,128,0.1); border:1px solid rgba(74,222,128,0.25); color:#4ade80; border-radius:8px; cursor:pointer; font-size:12px; font-weight:700; display:none; transition:.2s;">
+                                            <i class="ph ph-arrow-square-out"></i> Ver Lead
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Área de mensagens + ARIA -->
+                                <div style="flex:1; display:flex; overflow:hidden;">
+
+                                    <!-- Mensagens -->
+                                    <div id="wpp-chat-mensagens" style="flex:1; overflow-y:auto; padding:24px 20px; display:flex; flex-direction:column; gap:10px; background:#0d1117; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.08) transparent;">
+                                    </div>
+
+                                    <!-- Painel ARIA -->
+                                    <div style="width:270px; min-width:240px; border-left:1px solid rgba(255,255,255,0.05); overflow-y:auto; background:#0f1520; flex-shrink:0; padding:16px; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.06) transparent;">
+                                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.05);">
+                                            <div style="width:6px; height:6px; border-radius:50%; background:#b388ff; animation:pulse-dot 2s ease-in-out infinite;"></div>
+                                            <span style="font-size:11px; font-weight:700; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px;">ARIA ao vivo</span>
+                                        </div>
+                                        <div id="wpp-painel-analise">
+                                            <div style="padding:20px 0; text-align:center; color:rgba(255,255,255,0.2);">
+                                                <div style="font-size:32px; margin-bottom:10px;">🤖</div>
+                                                <div style="font-size:12px; line-height:1.6;">ARIA analisa cada mensagem automaticamente</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Input de envio -->
+                                <div style="padding:12px 16px; border-top:1px solid rgba(255,255,255,0.06); background:#111418; flex-shrink:0;">
+                                    <!-- Preview mídia -->
+                                    <div id="wpp-preview-midia" style="display:none; padding:8px 10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; margin-bottom:8px; position:relative;">
+                                        <button onclick="window.cancelarMidiaWpp()" style="position:absolute; top:6px; right:6px; background:rgba(0,0,0,0.6); border:none; color:#fff; border-radius:50%; width:20px; height:20px; cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center;"><i class="ph ph-x"></i></button>
+                                        <img id="wpp-preview-img" style="display:none; max-height:100px; border-radius:6px; object-fit:cover;" />
+                                        <div id="wpp-preview-doc" style="display:none; font-size:12px; color:rgba(255,255,255,0.5); padding:4px;"></div>
+                                    </div>
+
+                                    <div style="display:flex; align-items:flex-end; gap:8px;">
+                                        <!-- Botões de mídia -->
+                                        <div style="display:flex; gap:2px; flex-shrink:0; padding-bottom:2px;">
+                                            <button type="button" onclick="window.toggleEmojiWpp()" title="Emojis"
+                                                style="width:34px; height:34px; border-radius:8px; background:transparent; border:none; color:rgba(255,255,255,0.35); cursor:pointer; font-size:17px; display:flex; align-items:center; justify-content:center; transition:.2s;"
+                                                onmouseover="this.style.color='#25d366'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">😊</button>
+                                            <button type="button" onclick="document.getElementById('wpp-input-imagem').click()" title="Imagem"
+                                                style="width:34px; height:34px; border-radius:8px; background:transparent; border:none; color:rgba(255,255,255,0.35); cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; transition:.2s;"
+                                                onmouseover="this.style.color='#25d366'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">
+                                                <i class="ph ph-image"></i></button>
+                                            <button type="button" onclick="document.getElementById('wpp-input-doc').click()" title="Documento"
+                                                style="width:34px; height:34px; border-radius:8px; background:transparent; border:none; color:rgba(255,255,255,0.35); cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; transition:.2s;"
+                                                onmouseover="this.style.color='#25d366'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">
+                                                <i class="ph ph-paperclip"></i></button>
+                                            <button type="button" id="btn-gravar-audio" onclick="window.toggleGravarAudio()" title="Gravar áudio"
+                                                style="width:34px; height:34px; border-radius:8px; background:transparent; border:none; color:rgba(255,255,255,0.35); cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; transition:.2s;"
+                                                onmouseover="this.style.color='#25d366'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">
+                                                <i class="ph ph-microphone"></i></button>
+                                        </div>
+
+                                        <input type="file" id="wpp-input-imagem" accept="image/*,video/*" style="display:none;" onchange="window.selecionarMidiaWpp(this, 'imagem')" />
+                                        <input type="file" id="wpp-input-doc" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip" style="display:none;" onchange="window.selecionarMidiaWpp(this, 'documento')" />
+
+                                        <!-- Textarea -->
+                                        <div style="flex:1; position:relative;">
+                                            <textarea id="wpp-input-msg"
+                                                placeholder="Digite uma mensagem..."
+                                                rows="1"
+                                                style="width:100%; padding:10px 16px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:22px; color:#fff; font-size:13px; resize:none; outline:none; max-height:120px; line-height:1.5; font-family:var(--font-body); box-sizing:border-box; transition:.2s;"
+                                                onfocus="this.style.borderColor='rgba(37,211,102,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'"
+                                                onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); window.enviarMensagemWpp(); }"
+                                                oninput="this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,120)+'px';">
+                                            </textarea>
+                                            <div id="wpp-emoji-picker" style="display:none; position:absolute; bottom:52px; left:0; background:#1a1f2e; border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:14px; width:300px; z-index:200; box-shadow:0 16px 48px rgba(0,0,0,0.6);">
+                                                <div style="font-size:10px; color:rgba(255,255,255,0.3); margin-bottom:10px; text-transform:uppercase; letter-spacing:1px;">Emojis</div>
+                                                <div style="display:flex; flex-wrap:wrap; gap:4px; max-height:160px; overflow-y:auto;"></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Botão enviar -->
+                                        <div style="flex-shrink:0; padding-bottom:2px;">
+                                            <button id="btn-enviar-wpp" type="button" onclick="window.enviarMensagemWpp()"
+                                                style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#25d366,#1da851); border:none; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:17px; box-shadow:0 4px 16px rgba(37,211,102,0.3); transition:.2s;"
+                                                onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                                <i class="ph ph-paper-plane-right"></i>
+                                            </button>
+                                            <div id="wpp-gravando" style="display:none; align-items:center; gap:6px; font-size:11px; color:#f05252; white-space:nowrap;">
+                                                <div style="width:7px; height:7px; border-radius:50%; background:#f05252; animation:pulse-dot 1s infinite;"></div>
+                                                <span id="wpp-timer-audio">00:00</span>
+                                                <button type="button" onclick="window.cancelarAudio()" style="background:transparent; border:none; color:rgba(255,255,255,0.3); cursor:pointer; font-size:11px;">Cancelar</button>
+                                                <button type="button" onclick="window.pararGravarAudio()" style="background:#25d366; border:none; color:#000; cursor:pointer; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:700;">Enviar</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -3000,5 +3273,75 @@ setInterval(atualizarMetricasLive, 4000);
 })();
 </script>
 
+
+    <!-- ============================================================
+         MODAL: Conectar WhatsApp — QR Code direto no HAPSIS
+         ============================================================ -->
+    <div id="modal-conectar-wpp" class="modal-overlay">
+        <div class="modal-box" style="max-width:520px; text-align:center;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+                <h3 class="modal-title" style="display:flex; align-items:center; gap:10px; margin:0;">
+                    <i class="ph ph-whatsapp-logo" style="color:#25d366; font-size:24px;"></i>
+                    <span id="wpp-modal-titulo">Conectar WhatsApp</span>
+                </h3>
+                <button class="btn-fechar" onclick="window.fecharModalWpp()">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+
+            <!-- Estado: Desconectado — mostrar QR -->
+            <div id="wpp-state-desconectado">
+                <p style="color:var(--muted); font-size:13px; margin-bottom:20px;">
+                    Abra o WhatsApp no celular →
+                    <strong style="color:var(--text);">⋮ Menu → Dispositivos Conectados → Conectar Dispositivo</strong>
+                </p>
+
+                <!-- QR Code container -->
+                <div style="width:260px; height:260px; margin:0 auto 16px; background:white; border-radius:16px; display:flex; align-items:center; justify-content:center; padding:14px; box-shadow:0 12px 40px rgba(0,0,0,0.4);">
+                    <div id="wpp-qr-loading" style="display:flex; flex-direction:column; align-items:center; color:#666;">
+                        <i class="ph ph-spinner ph-spin" style="font-size:40px; color:#25d366; margin-bottom:10px;"></i>
+                        <span style="font-size:13px;">Gerando QR Code...</span>
+                    </div>
+                    <div id="wpp-qr-image" style="display:none; width:100%; height:100%;"></div>
+                </div>
+
+                <!-- Status -->
+                <div id="wpp-qr-status" style="font-size:12px; color:var(--muted); margin-bottom:16px; display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <div style="width:6px; height:6px; border-radius:50%; background:#f5c518; animation:pulse-dot 1.5s infinite;"></div>
+                    Aguardando leitura...
+                </div>
+
+                <!-- Botão atualizar QR -->
+                <button onclick="window.wppGerarQR()" style="background:transparent; border:1px solid rgba(37,211,102,0.4); color:#25d366; padding:8px 20px; border-radius:8px; cursor:pointer; font-size:13px; margin-bottom:12px;">
+                    <i class="ph ph-arrows-clockwise"></i> Gerar novo QR Code
+                </button>
+            </div>
+
+            <!-- Estado: Conectado -->
+            <div id="wpp-state-conectado" style="display:none;">
+                <div style="width:80px; height:80px; border-radius:50%; background:rgba(37,211,102,0.15); border:3px solid rgba(37,211,102,0.5); display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:40px;">✅</div>
+                <h3 style="color:#25d366; margin:0 0 8px; font-size:20px;">WhatsApp Conectado!</h3>
+                <p style="color:var(--muted); font-size:13px; margin-bottom:8px;" id="wpp-conectado-numero">Número ativo e recebendo mensagens</p>
+                <p style="color:var(--muted); font-size:12px; margin-bottom:24px;">As mensagens chegam automaticamente na Central WhatsApp em tempo real.</p>
+
+                <div style="display:flex; gap:10px;">
+                    <button onclick="window.fecharModalWpp(); setTimeout(()=>document.querySelector('[data-aba=\'aba-central-whatsapp\']')?.click(), 100);"
+                        class="btn-primary" style="flex:1; background:#25d366; border-color:#25d366;">
+                        <i class="ph ph-whatsapp-logo"></i> Ver Conversas
+                    </button>
+                    <button onclick="window.wppDesconectar()"
+                        style="flex:1; padding:10px; background:rgba(240,82,82,0.1); border:1px solid rgba(240,82,82,0.4); color:var(--danger); border-radius:10px; cursor:pointer; font-size:13px; font-weight:700;">
+                        <i class="ph ph-plugs"></i> Desconectar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Estado: Desconectando -->
+            <div id="wpp-state-desconectando" style="display:none;">
+                <i class="ph ph-spinner ph-spin" style="font-size:48px; color:var(--danger); display:block; margin-bottom:16px;"></i>
+                <p style="color:var(--muted);">Desconectando WhatsApp...</p>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
